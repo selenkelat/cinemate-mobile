@@ -13,19 +13,20 @@ export interface UploadExportResponse {
 interface PickedFile {
   uri: string;
   name: string;
-  mimeType?: string | null;
 }
 
 export const exportsApi = {
-  upload: (file: PickedFile) => {
+  upload: async (file: PickedFile) => {
+    // NOT the classic RN `{ uri, name, type }` FormData part — Expo SDK 57's global `fetch` is
+    // its own WinterCG-compliant implementation (expo/src/winter/fetch), which only accepts a
+    // real Blob for a file part (see convertFormData.ts: "`uri` is not supported for React
+    // Native's FormData"). Fetching the local file:// URI and reading it as a Blob is the
+    // supported path — it goes through Expo's native blob store, not through JS memory.
+    const fileResponse = await fetch(file.uri);
+    const blob = await fileResponse.blob();
+
     const formData = new FormData();
-    // React Native's FormData accepts this { uri, name, type } shape in place of a real Blob —
-    // the native bridge reads the file at `uri` and streams it, it isn't loaded into JS memory.
-    formData.append('file', {
-      uri: file.uri,
-      name: file.name,
-      type: file.mimeType ?? 'application/zip',
-    } as unknown as Blob);
+    formData.append('file', blob, file.name);
 
     return apiRequest<UploadExportResponse>('/api/me/exports', {
       method: 'POST',

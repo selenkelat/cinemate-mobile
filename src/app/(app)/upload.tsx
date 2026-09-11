@@ -48,6 +48,10 @@ export default function UploadScreen() {
       const response = await exportsApi.upload(pickedFile);
       setResult(response);
     } catch (err) {
+      // Logged, not just swallowed: a bare "couldn't reach the server" is the same message for
+      // a wrong LAN IP, a dead backend, and a genuine RN networking failure — this is the one
+      // place that tells them apart, and Metro streams console.error from the device.
+      console.error('Export upload failed:', err);
       // The backend's own message ("Empty file.", "Only .zip exports...") is specific enough to
       // show directly — unlike the auth screens, there's no need to map it to a canned string.
       setError(err instanceof ApiError ? err.message : "Couldn't reach the server. Check your connection and try again.");
