@@ -34,6 +34,9 @@ yarn-error.*
 .env
 .env*.local
 
+# local-only, not shared (progress notes, permission settings)
+.claude/
+
 # typescript
 *.tsbuildinfo
 
