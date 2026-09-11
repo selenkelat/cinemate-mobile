@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import { Pressable, StyleSheet } from 'react-native';
 
 import { useAuth } from '@/auth/AuthContext';
@@ -20,8 +21,12 @@ export default function HomeScreen() {
         @{user?.username}
       </ThemedText>
 
-      <Pressable style={styles.button} onPress={() => logout()}>
-        <ThemedText style={styles.buttonText}>Log out</ThemedText>
+      <Pressable style={styles.button} onPress={() => router.push('/upload')}>
+        <ThemedText style={styles.buttonText}>Upload Letterboxd export</ThemedText>
+      </Pressable>
+
+      <Pressable style={styles.secondaryButton} onPress={() => logout()}>
+        <ThemedText type="linkPrimary">Log out</ThemedText>
       </Pressable>
     </ThemedView>
   );
@@ -37,5 +42,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.four,
     paddingVertical: Spacing.three,
   },
+  secondaryButton: { padding: Spacing.two },
   buttonText: { color: '#fff', fontWeight: '600' },
 });

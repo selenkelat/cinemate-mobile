@@ -34,13 +34,22 @@ interface RequestOptions {
 }
 
 async function rawRequest(path: string, options: RequestOptions, token: string | null): Promise<Response> {
+  // A FormData body (multipart upload) must NOT get a manual Content-Type: fetch computes its
+  // own `multipart/form-data; boundary=...` from the FormData instance, and overriding it here
+  // would produce a header with no boundary the server can't parse.
+  const isFormData = options.body instanceof FormData;
+
   return fetch(`${API_BASE_URL}${path}`, {
     method: options.method ?? 'GET',
     headers: {
-      'Content-Type': 'application/json',
+      ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
-    body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
+    body: isFormData
+      ? (options.body as FormData)
+      : options.body !== undefined
+        ? JSON.stringify(options.body)
+        : undefined,
   });
 }
 
@@ -60,7 +69,17 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
 
   if (!response.ok) {
     const text = await response.text();
-    throw new ApiError(response.status, text || response.statusText);
+    // ASP.NET's BadRequest(string)/NotFound(string) serialize the message as a bare JSON
+    // string (e.g. `"Empty file."`, quotes included) — unwrap it so callers get the plain
+    // message the backend actually wrote, not a raw JSON-encoded string.
+    let message = text || response.statusText;
+    try {
+      const parsed = JSON.parse(text);
+      if (typeof parsed === 'string') message = parsed;
+    } catch {
+      // Not JSON (e.g. an empty 401 body) — use the raw text as-is.
+    }
+    throw new ApiError(response.status, message);
   }
 
   if (response.status === 204) {
