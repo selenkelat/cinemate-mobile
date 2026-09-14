@@ -17,6 +17,7 @@ export interface FavoriteMovieDto {
   movieId: number;
   title: string;
   rank: number;
+  posterUrl: string | null;
 }
 
 export interface UserProfileDto {

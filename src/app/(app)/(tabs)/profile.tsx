@@ -1,9 +1,10 @@
+import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { ApiError } from '@/api/client';
-import { profileApi, type UserProfileDto } from '@/api/profile';
+import { profileApi, type FavoriteMovieDto, type UserProfileDto } from '@/api/profile';
 import { useAuth } from '@/auth/AuthContext';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -115,11 +116,7 @@ export default function ProfileScreen() {
         {profile.favoriteMovies.length === 0 ? (
           <ThemedText themeColor="textSecondary">You haven&apos;t picked any favorites yet.</ThemedText>
         ) : (
-          profile.favoriteMovies.map((favorite) => (
-            <ThemedText key={favorite.movieId}>
-              {favorite.rank}. {favorite.title}
-            </ThemedText>
-          ))
+          profile.favoriteMovies.map((favorite) => <FavoriteRow key={favorite.movieId} favorite={favorite} />)
         )}
       </ThemedView>
 
@@ -129,6 +126,23 @@ export default function ProfileScreen() {
         </ThemedText>
       </Pressable>
     </ScrollView>
+  );
+}
+
+function FavoriteRow({ favorite }: { favorite: FavoriteMovieDto }) {
+  const theme = useTheme();
+
+  return (
+    <View style={styles.favoriteRow}>
+      {favorite.posterUrl ? (
+        <Image source={{ uri: favorite.posterUrl }} style={styles.poster} contentFit="cover" />
+      ) : (
+        <View style={[styles.poster, styles.posterPlaceholder, { backgroundColor: theme.backgroundSelected }]} />
+      )}
+      <ThemedText style={styles.favoriteTitle}>
+        {favorite.rank}. {favorite.title}
+      </ThemedText>
+    </View>
   );
 }
 
@@ -154,6 +168,10 @@ const styles = StyleSheet.create({
   genreLabelRow: { flexDirection: 'row', justifyContent: 'space-between' },
   genreBarTrack: { height: 6, borderRadius: 3, overflow: 'hidden' },
   genreBarFill: { height: 6, backgroundColor: '#208AEF' },
+  favoriteRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
+  poster: { width: 46, height: 69, borderRadius: Spacing.half },
+  posterPlaceholder: {},
+  favoriteTitle: { flex: 1 },
   button: {
     backgroundColor: '#208AEF',
     borderRadius: Spacing.two,
