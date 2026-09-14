@@ -1,4 +1,4 @@
-import { useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
@@ -95,6 +95,14 @@ export default function MatchDetailScreen() {
           <StatRow label={`Correlation over ${match.sharedRatedCount} shared ratings`} value={String(match.ratingCorrelation)} />
         )}
       </ThemedView>
+
+      <Pressable
+        style={styles.button}
+        onPress={() =>
+          router.push({ pathname: '/chat/[otherUserId]', params: { otherUserId: String(match.user2Id) } })
+        }>
+        <ThemedText style={styles.buttonText}>Message</ThemedText>
+      </Pressable>
     </ScrollView>
   );
 }
