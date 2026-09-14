@@ -11,6 +11,9 @@ interface AuthContextValue {
   // (auth) and (app) route guards hold off redirecting until this settles, so a valid session
   // never flashes the login screen first.
   isLoading: boolean;
+  // The raw token, for callers that can't go through apiRequest (e.g. a WebSocket handshake
+  // header) — everything else should keep using client.ts's auth: true, not this directly.
+  getAccessToken: () => string | null;
   register: (username: string, password: string, displayName: string) => Promise<void>;
   login: (username: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -82,7 +85,12 @@ export function AuthProvider({ children }: PropsWithChildren) {
     setUser(null);
   };
 
-  const value = useMemo(() => ({ user, isLoading, register, login, logout }), [user, isLoading]);
+  const getAccessToken = () => accessTokenRef.current;
+
+  const value = useMemo(
+    () => ({ user, isLoading, getAccessToken, register, login, logout }),
+    [user, isLoading],
+  );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
