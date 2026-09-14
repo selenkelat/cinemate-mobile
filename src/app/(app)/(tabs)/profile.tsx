@@ -43,10 +43,10 @@ export default function ProfileScreen() {
     );
   }
 
-  if (error) {
+  if (error || !profile) {
     return (
       <ThemedView style={styles.centered}>
-        <ThemedText style={styles.error}>{error}</ThemedText>
+        <ThemedText style={styles.error}>{error ?? 'Something went wrong.'}</ThemedText>
         <Pressable style={styles.button} onPress={load}>
           <ThemedText style={styles.buttonText}>Try again</ThemedText>
         </Pressable>
@@ -54,30 +54,20 @@ export default function ProfileScreen() {
     );
   }
 
-  // TasteProfileService.GetProfileAsync only 404s for an unknown user id, never for "no import
-  // yet" — an authenticated user always has a profile, just an all-zero one. So "not imported" is
-  // read off watchedCount, not off a request failure.
-  if (!profile || profile.watchedCount === 0) {
-    return (
-      <ThemedView style={styles.centered}>
-        <ThemedText type="title" style={styles.title}>
-          No taste profile yet
-        </ThemedText>
-        <ThemedText themeColor="textSecondary" style={styles.hint}>
-          Upload your Letterboxd export to build your taste profile.
-        </ThemedText>
-        <Pressable style={styles.button} onPress={() => router.push('/upload')}>
-          <ThemedText style={styles.buttonText}>Upload export</ThemedText>
-        </Pressable>
-      </ThemedView>
-    );
-  }
+  // No "not imported yet" empty state here: the onboarding gate at "/" only ever lands a
+  // signed-in user on this tab once watchedCount > 0, so that branch is unreachable through
+  // in-app navigation and isn't worth carrying as defensive code.
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <ThemedText type="title" style={styles.title}>
-        My Profile
-      </ThemedText>
+      <View style={styles.header}>
+        <ThemedText type="title" style={styles.title}>
+          My Profile
+        </ThemedText>
+        <Pressable onPress={() => router.push('/settings')}>
+          <ThemedText type="linkPrimary">Settings</ThemedText>
+        </Pressable>
+      </View>
 
       <ThemedView type="backgroundElement" style={styles.card}>
         <StatRow label="Watched" value={profile.watchedCount} />
@@ -154,8 +144,8 @@ function StatRow({ label, value }: { label: string; value: number }) {
 const styles = StyleSheet.create({
   container: { flexGrow: 1, padding: Spacing.four, gap: Spacing.three, paddingBottom: Spacing.six },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: Spacing.four, gap: Spacing.three },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   title: { textAlign: 'center' },
-  hint: { textAlign: 'center' },
   error: { color: '#d33', textAlign: 'center' },
   card: { borderRadius: Spacing.two, padding: Spacing.three, gap: Spacing.two },
   cardTitle: { marginBottom: Spacing.one },
