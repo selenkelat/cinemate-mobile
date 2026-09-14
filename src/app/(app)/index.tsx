@@ -25,6 +25,14 @@ export default function HomeScreen() {
         <ThemedText style={styles.buttonText}>Upload Letterboxd export</ThemedText>
       </Pressable>
 
+      <Pressable style={styles.button} onPress={() => router.push('/profile')}>
+        <ThemedText style={styles.buttonText}>My profile</ThemedText>
+      </Pressable>
+
+      <Pressable style={styles.button} onPress={() => router.push('/matches')}>
+        <ThemedText style={styles.buttonText}>Find matches</ThemedText>
+      </Pressable>
+
       <Pressable style={styles.secondaryButton} onPress={() => logout()}>
         <ThemedText type="linkPrimary">Log out</ThemedText>
       </Pressable>
