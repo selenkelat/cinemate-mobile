@@ -103,17 +103,6 @@ export default function MatchDetailScreen() {
         onPress={() => openOverlap('Watched together', match.watchedOverlap.movies)}
       />
 
-      <ThemedView type="backgroundElement" style={styles.card}>
-        <ThemedText type="smallBold" style={styles.cardTitle}>
-          Ratings
-        </ThemedText>
-        {match.ratingCorrelation === null ? (
-          <ThemedText themeColor="textSecondary">Not enough shared ratings yet.</ThemedText>
-        ) : (
-          <StatRow label={`Correlation over ${match.sharedRatedCount} shared ratings`} value={String(match.ratingCorrelation)} />
-        )}
-      </ThemedView>
-
       <Pressable
         style={styles.button}
         onPress={() =>
