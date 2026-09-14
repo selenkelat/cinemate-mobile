@@ -1,4 +1,3 @@
-import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
@@ -6,10 +5,11 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'reac
 
 import { avatarApi } from '@/api/avatar';
 import { ApiError } from '@/api/client';
-import { profileApi, type FavoriteMovieDto, type UserProfileDto } from '@/api/profile';
+import { profileApi, type UserProfileDto } from '@/api/profile';
 import { useAuth } from '@/auth/AuthContext';
 import { Avatar } from '@/components/avatar';
 import { CategoryBox } from '@/components/category-box';
+import { FavoriteMovieRow } from '@/components/favorite-movie-row';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
@@ -145,7 +145,7 @@ export default function ProfileScreen() {
         {profile.favoriteMovies.length === 0 ? (
           <ThemedText themeColor="textSecondary">You haven&apos;t picked any favorites yet.</ThemedText>
         ) : (
-          profile.favoriteMovies.map((favorite) => <FavoriteRow key={favorite.movieId} favorite={favorite} />)
+          profile.favoriteMovies.map((favorite) => <FavoriteMovieRow key={favorite.movieId} favorite={favorite} />)
         )}
       </ThemedView>
 
@@ -197,23 +197,6 @@ export default function ProfileScreen() {
   );
 }
 
-function FavoriteRow({ favorite }: { favorite: FavoriteMovieDto }) {
-  const theme = useTheme();
-
-  return (
-    <View style={styles.favoriteRow}>
-      {favorite.posterUrl ? (
-        <Image source={{ uri: favorite.posterUrl }} style={styles.poster} contentFit="cover" />
-      ) : (
-        <View style={[styles.poster, styles.posterPlaceholder, { backgroundColor: theme.backgroundSelected }]} />
-      )}
-      <ThemedText style={styles.favoriteTitle}>
-        {favorite.rank}. {favorite.title}
-      </ThemedText>
-    </View>
-  );
-}
-
 function StatRow({ label, value }: { label: string; value: number }) {
   return (
     <View style={styles.statRow}>
@@ -238,10 +221,6 @@ const styles = StyleSheet.create({
   genreLabelRow: { flexDirection: 'row', justifyContent: 'space-between' },
   genreBarTrack: { height: 6, borderRadius: 3, overflow: 'hidden' },
   genreBarFill: { height: 6, backgroundColor: '#208AEF' },
-  favoriteRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
-  poster: { width: 46, height: 69, borderRadius: Spacing.half },
-  posterPlaceholder: {},
-  favoriteTitle: { flex: 1 },
   button: {
     backgroundColor: '#208AEF',
     borderRadius: Spacing.two,

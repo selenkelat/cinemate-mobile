@@ -1,4 +1,5 @@
 import { apiRequest } from '@/api/client';
+import type { FavoriteMovieDto } from '@/api/profile';
 
 // Mirrors Cinemate.Models.Dto.CandidateFavoriteMovieDto field-for-field.
 export interface CandidateFavoriteMovieDto {
@@ -40,11 +41,11 @@ export interface MatchResultDto {
   username: string;
   displayName: string;
   avatarUrl: string | null;
+  otherFavoriteMovies: FavoriteMovieDto[];
   overallScore: number;
   genreSimilarity: number;
   watchedOverlap: MovieOverlapDto;
   likedOverlap: MovieOverlapDto;
-  favoriteOverlap: MovieOverlapDto;
   ratingCorrelation: number | null;
   sharedRatedCount: number;
 }

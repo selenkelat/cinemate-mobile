@@ -6,6 +6,7 @@ import { ApiError } from '@/api/client';
 import { matchesApi, type MatchResultDto } from '@/api/matches';
 import { Avatar } from '@/components/avatar';
 import { CategoryBox } from '@/components/category-box';
+import { FavoriteMovieRow } from '@/components/favorite-movie-row';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
@@ -82,17 +83,12 @@ export default function MatchDetailScreen() {
 
       <ThemedView type="backgroundElement" style={styles.card}>
         <ThemedText type="smallBold" style={styles.cardTitle}>
-          Favorites in common
+          Favorites
         </ThemedText>
-        {match.favoriteOverlap.movies.length === 0 ? (
-          <ThemedText themeColor="textSecondary">
-            {/* Both a genuine "no overlap" and "neither has picked favorites" collapse to the same
-                empty overlap on the wire — MatchResultDto doesn't distinguish them, so neither
-                does this copy. */}
-            No shared favorites yet — pick yours from your profile to find out.
-          </ThemedText>
+        {match.otherFavoriteMovies.length === 0 ? (
+          <ThemedText themeColor="textSecondary">{match.displayName} hasn&apos;t picked any favorites yet.</ThemedText>
         ) : (
-          match.favoriteOverlap.movies.map((movie) => <ThemedText key={movie.movieId}>{movie.title}</ThemedText>)
+          match.otherFavoriteMovies.map((favorite) => <FavoriteMovieRow key={favorite.movieId} favorite={favorite} />)
         )}
       </ThemedView>
 
