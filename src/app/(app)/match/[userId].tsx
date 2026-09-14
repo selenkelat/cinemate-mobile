@@ -3,7 +3,9 @@ import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { ApiError } from '@/api/client';
-import { matchesApi, type MatchResultDto, type MovieOverlapDto } from '@/api/matches';
+import { matchesApi, type MatchResultDto } from '@/api/matches';
+import { Avatar } from '@/components/avatar';
+import { CategoryBox } from '@/components/category-box';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
@@ -53,8 +55,20 @@ export default function MatchDetailScreen() {
     );
   }
 
+  const openOverlap = (title: string, movies: MatchResultDto['watchedOverlap']['movies']) => {
+    router.push({ pathname: '/movie-list', params: { title, movies: JSON.stringify(movies) } });
+  };
+
   return (
     <ScrollView contentContainerStyle={styles.container}>
+      <Avatar avatarUrl={match.avatarUrl} displayName={match.displayName} style={styles.avatar} />
+      <ThemedText type="subtitle" style={styles.name}>
+        {match.displayName}
+      </ThemedText>
+      <ThemedText themeColor="textSecondary" style={styles.username}>
+        @{match.username}
+      </ThemedText>
+
       <ThemedText type="title" style={styles.score}>
         {Math.round(match.overallScore)}%
       </ThemedText>
@@ -66,14 +80,11 @@ export default function MatchDetailScreen() {
         <StatRow label="Genre similarity" value={`${match.genreSimilarity}%`} />
       </ThemedView>
 
-      <OverlapCard title="Watched together" overlap={match.watchedOverlap} />
-      <OverlapCard title="Liked together" overlap={match.likedOverlap} />
-
       <ThemedView type="backgroundElement" style={styles.card}>
         <ThemedText type="smallBold" style={styles.cardTitle}>
           Favorites in common
         </ThemedText>
-        {match.favoriteOverlap.titles.length === 0 ? (
+        {match.favoriteOverlap.movies.length === 0 ? (
           <ThemedText themeColor="textSecondary">
             {/* Both a genuine "no overlap" and "neither has picked favorites" collapse to the same
                 empty overlap on the wire — MatchResultDto doesn't distinguish them, so neither
@@ -81,9 +92,20 @@ export default function MatchDetailScreen() {
             No shared favorites yet — pick yours from your profile to find out.
           </ThemedText>
         ) : (
-          match.favoriteOverlap.titles.map((title) => <ThemedText key={title}>{title}</ThemedText>)
+          match.favoriteOverlap.movies.map((movie) => <ThemedText key={movie.movieId}>{movie.title}</ThemedText>)
         )}
       </ThemedView>
+
+      <CategoryBox
+        title="Liked together"
+        count={match.likedOverlap.count}
+        onPress={() => openOverlap('Liked together', match.likedOverlap.movies)}
+      />
+      <CategoryBox
+        title="Watched together"
+        count={match.watchedOverlap.count}
+        onPress={() => openOverlap('Watched together', match.watchedOverlap.movies)}
+      />
 
       <ThemedView type="backgroundElement" style={styles.card}>
         <ThemedText type="smallBold" style={styles.cardTitle}>
@@ -116,25 +138,13 @@ function StatRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-function OverlapCard({ title, overlap }: { title: string; overlap: MovieOverlapDto }) {
-  return (
-    <ThemedView type="backgroundElement" style={styles.card}>
-      <ThemedText type="smallBold" style={styles.cardTitle}>
-        {title} ({overlap.count})
-      </ThemedText>
-      {overlap.titles.length === 0 ? (
-        <ThemedText themeColor="textSecondary">Nothing in common yet.</ThemedText>
-      ) : (
-        overlap.titles.slice(0, 10).map((movieTitle) => <ThemedText key={movieTitle}>{movieTitle}</ThemedText>)
-      )}
-    </ThemedView>
-  );
-}
-
 const styles = StyleSheet.create({
   container: { flexGrow: 1, padding: Spacing.four, gap: Spacing.three, paddingBottom: Spacing.six },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: Spacing.four, gap: Spacing.three },
-  score: { textAlign: 'center' },
+  avatar: { alignSelf: 'center', marginBottom: Spacing.two },
+  name: { textAlign: 'center' },
+  username: { textAlign: 'center', marginTop: -Spacing.one },
+  score: { textAlign: 'center', marginTop: Spacing.four },
   subtitle: { textAlign: 'center', marginTop: -Spacing.two },
   error: { color: '#d33', textAlign: 'center' },
   card: { borderRadius: Spacing.two, padding: Spacing.three, gap: Spacing.two },

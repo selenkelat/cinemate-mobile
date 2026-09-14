@@ -19,16 +19,27 @@ export interface MatchCandidateDto {
   avatarUrl: string | null;
 }
 
+// Mirrors Cinemate.Models.Dto.OverlapMovieDto field-for-field.
+export interface OverlapMovieDto {
+  movieId: number;
+  title: string;
+  releaseYear: number | null;
+  posterUrl: string | null;
+}
+
 // Mirrors Cinemate.Models.Dto.MovieOverlapDto field-for-field.
 export interface MovieOverlapDto {
   count: number;
-  titles: string[];
+  movies: OverlapMovieDto[];
 }
 
 // Mirrors Cinemate.Models.Dto.MatchResultDto field-for-field.
 export interface MatchResultDto {
   user1Id: number;
   user2Id: number;
+  username: string;
+  displayName: string;
+  avatarUrl: string | null;
   overallScore: number;
   genreSimilarity: number;
   watchedOverlap: MovieOverlapDto;
