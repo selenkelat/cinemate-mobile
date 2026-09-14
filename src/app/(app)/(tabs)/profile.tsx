@@ -70,6 +70,21 @@ export default function ProfileScreen() {
         </Pressable>
       </View>
 
+      <View style={[styles.avatar, { backgroundColor: theme.backgroundSelected }]}>
+        <ThemedText type="title">{(user?.displayName ?? '?').charAt(0).toUpperCase()}</ThemedText>
+      </View>
+
+      <ThemedView type="backgroundElement" style={styles.card}>
+        <ThemedText type="smallBold" style={styles.cardTitle}>
+          Favorites
+        </ThemedText>
+        {profile.favoriteMovies.length === 0 ? (
+          <ThemedText themeColor="textSecondary">You haven&apos;t picked any favorites yet.</ThemedText>
+        ) : (
+          profile.favoriteMovies.map((favorite) => <FavoriteRow key={favorite.movieId} favorite={favorite} />)
+        )}
+      </ThemedView>
+
       <ThemedView type="backgroundElement" style={styles.card}>
         <StatRow label="Watched" value={profile.watchedCount} />
         <StatRow label="Rated" value={profile.ratedCount} />
@@ -107,17 +122,6 @@ export default function ProfileScreen() {
             </View>
           </View>
         ))}
-      </ThemedView>
-
-      <ThemedView type="backgroundElement" style={styles.card}>
-        <ThemedText type="smallBold" style={styles.cardTitle}>
-          Favorites
-        </ThemedText>
-        {profile.favoriteMovies.length === 0 ? (
-          <ThemedText themeColor="textSecondary">You haven&apos;t picked any favorites yet.</ThemedText>
-        ) : (
-          profile.favoriteMovies.map((favorite) => <FavoriteRow key={favorite.movieId} favorite={favorite} />)
-        )}
       </ThemedView>
 
       <Pressable style={styles.button} onPress={() => router.push('/favorites')}>
@@ -160,6 +164,14 @@ const styles = StyleSheet.create({
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: Spacing.four, gap: Spacing.three },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   title: { textAlign: 'center' },
+  avatar: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    alignSelf: 'center',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   error: { color: '#d33', textAlign: 'center' },
   card: { borderRadius: Spacing.two, padding: Spacing.three, gap: Spacing.two },
   cardTitle: { marginBottom: Spacing.one },
