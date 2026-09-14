@@ -186,12 +186,6 @@ export default function ProfileScreen() {
           </View>
         ))}
       </ThemedView>
-
-      <Pressable style={styles.button} onPress={() => router.push('/favorites')}>
-        <ThemedText style={styles.buttonText}>
-          {profile.favoriteMovies.length === 0 ? 'Choose favorites' : 'Edit favorites'}
-        </ThemedText>
-      </Pressable>
     </ScrollView>
   );
 }

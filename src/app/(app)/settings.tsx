@@ -6,7 +6,6 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 
-// Minimal for now — Edit favorites and other settings move here in a later slice.
 export default function SettingsScreen() {
   const { logout } = useAuth();
 
@@ -15,6 +14,10 @@ export default function SettingsScreen() {
       <ThemedText type="title" style={styles.title}>
         Settings
       </ThemedText>
+
+      <Pressable style={styles.button} onPress={() => router.push('/favorites')}>
+        <ThemedText style={styles.buttonText}>Edit favorites</ThemedText>
+      </Pressable>
 
       <Pressable style={styles.button} onPress={() => router.push('/upload')}>
         <ThemedText style={styles.buttonText}>Upload new export</ThemedText>
