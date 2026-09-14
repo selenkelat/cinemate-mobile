@@ -90,8 +90,8 @@ export default function UploadScreen() {
           )}
         </ScrollView>
 
-        <Pressable style={styles.button} onPress={() => router.back()}>
-          <ThemedText style={styles.buttonText}>Done</ThemedText>
+        <Pressable style={styles.button} onPress={() => router.replace('/favorites')}>
+          <ThemedText style={styles.buttonText}>Continue to favorites</ThemedText>
         </Pressable>
       </ThemedView>
     );

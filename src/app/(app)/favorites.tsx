@@ -63,7 +63,7 @@ export default function FavoritesScreen() {
     setIsSaving(true);
     try {
       await favoritesApi.set(selectedIds);
-      router.back();
+      router.replace('/profile');
     } catch (err) {
       console.error('Save favorites failed:', err);
       if (err instanceof ApiError && err.status === 422) {
