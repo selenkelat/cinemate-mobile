@@ -14,6 +14,9 @@ interface AuthContextValue {
   // The raw token, for callers that can't go through apiRequest (e.g. a WebSocket handshake
   // header) — everything else should keep using client.ts's auth: true, not this directly.
   getAccessToken: () => string | null;
+  // Exposed for the same reason as getAccessToken — a WS reconnect (useChatSocket) needs to
+  // force a fresh token outside of apiRequest's own automatic refresh-and-retry.
+  refreshAccessToken: () => Promise<string | null>;
   register: (username: string, password: string, displayName: string) => Promise<void>;
   login: (username: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -88,7 +91,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
   const getAccessToken = () => accessTokenRef.current;
 
   const value = useMemo(
-    () => ({ user, isLoading, getAccessToken, register, login, logout }),
+    () => ({ user, isLoading, getAccessToken, refreshAccessToken, register, login, logout }),
     [user, isLoading],
   );
 
