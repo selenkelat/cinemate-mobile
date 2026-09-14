@@ -1,5 +1,12 @@
 import { apiRequest } from '@/api/client';
 
+// Mirrors Cinemate.Models.Dto.CandidateFavoriteMovieDto field-for-field.
+export interface CandidateFavoriteMovieDto {
+  movieId: number;
+  title: string;
+  posterUrl: string | null;
+}
+
 // Mirrors Cinemate.Models.Dto.MatchCandidateDto field-for-field.
 export interface MatchCandidateDto {
   userId: number;
@@ -7,6 +14,8 @@ export interface MatchCandidateDto {
   displayName: string;
   overallScore: number;
   watchedOverlapCount: number;
+  favoriteMovies: CandidateFavoriteMovieDto[];
+  topGenres: string[];
 }
 
 // Mirrors Cinemate.Models.Dto.MovieOverlapDto field-for-field.
