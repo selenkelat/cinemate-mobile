@@ -7,7 +7,7 @@ import { profileApi } from '@/api/profile';
 import { useAuth } from '@/auth/AuthContext';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { AccentColor, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 type OnboardingTarget = '/upload' | '/favorites' | '/profile';
@@ -66,7 +66,7 @@ const styles = StyleSheet.create({
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: Spacing.four, gap: Spacing.three },
   error: { color: '#d33', textAlign: 'center' },
   button: {
-    backgroundColor: '#208AEF',
+    backgroundColor: AccentColor,
     borderRadius: Spacing.two,
     padding: Spacing.three,
     alignItems: 'center',

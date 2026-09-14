@@ -17,14 +17,20 @@ export const Colors = {
   },
   dark: {
     text: '#ffffff',
-    background: '#000000',
-    backgroundElement: '#212225',
-    backgroundSelected: '#2E3135',
-    textSecondary: '#B0B4BA',
+    background: '#141A22',
+    backgroundElement: '#1E2630',
+    backgroundSelected: '#2A3542',
+    textSecondary: '#A3ABB8',
   },
 } as const;
 
 export type ThemeColor = keyof typeof Colors.light & keyof typeof Colors.dark;
+
+// The app's single brand color — used for buttons, links, badges, score highlights, tab
+// bar tint. Same value in light and dark (not a Colors.light/dark entry) since none of its
+// usages have ever pulled it from useTheme(); it's swapped in directly as a literal wherever
+// a button/accent color is needed.
+export const AccentColor = '#16A34A';
 
 export const Fonts = Platform.select({
   ios: {

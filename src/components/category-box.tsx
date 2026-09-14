@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { Spacing } from '@/constants/theme';
+import { AccentColor, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 interface CategoryBoxProps {
@@ -45,7 +45,7 @@ const styles = StyleSheet.create({
     minWidth: 26,
     height: 26,
     borderRadius: 13,
-    backgroundColor: '#208AEF',
+    backgroundColor: AccentColor,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: Spacing.one,

@@ -8,7 +8,7 @@ import { useAuth } from '@/auth/AuthContext';
 import { useChatSocket } from '@/chat/useChatSocket';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { AccentColor, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 const PAGE_SIZE = 50;
@@ -233,7 +233,7 @@ function MessageBubble({ message, isMine }: { message: MessageDto; isMine: boole
 
   return (
     <View style={[styles.bubbleRow, isMine ? styles.bubbleRowMine : styles.bubbleRowTheirs]}>
-      <View style={[styles.bubble, { backgroundColor: isMine ? '#208AEF' : theme.backgroundElement }]}>
+      <View style={[styles.bubble, { backgroundColor: isMine ? AccentColor : theme.backgroundElement }]}>
         <ThemedText style={isMine ? styles.bubbleTextMine : undefined}>{message.body}</ThemedText>
       </View>
       <ThemedText type="small" themeColor="textSecondary">
@@ -282,7 +282,7 @@ const styles = StyleSheet.create({
   },
   input: { flex: 1, borderRadius: Spacing.two, padding: Spacing.three, fontSize: 16, maxHeight: 120 },
   sendButton: {
-    backgroundColor: '#208AEF',
+    backgroundColor: AccentColor,
     borderRadius: Spacing.two,
     paddingHorizontal: Spacing.four,
     paddingVertical: Spacing.three,
@@ -290,7 +290,7 @@ const styles = StyleSheet.create({
   sendButtonDisabled: { opacity: 0.5 },
   sendButtonText: { color: '#fff', fontWeight: '600' },
   button: {
-    backgroundColor: '#208AEF',
+    backgroundColor: AccentColor,
     borderRadius: Spacing.two,
     padding: Spacing.three,
     alignItems: 'center',

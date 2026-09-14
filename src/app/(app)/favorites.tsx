@@ -9,7 +9,7 @@ import { profileApi } from '@/api/profile';
 import { useAuth } from '@/auth/AuthContext';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { AccentColor, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 const MAX_FAVORITES = 4;
@@ -180,7 +180,7 @@ const styles = StyleSheet.create({
   rowDisabled: { opacity: 0.4 },
   rowText: { flex: 1, marginRight: Spacing.two },
   button: {
-    backgroundColor: '#208AEF',
+    backgroundColor: AccentColor,
     borderRadius: Spacing.two,
     padding: Spacing.three,
     alignItems: 'center',

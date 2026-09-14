@@ -6,7 +6,7 @@ import { ApiError } from '@/api/client';
 import { chatApi, type ConversationSummaryDto } from '@/api/chat';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { AccentColor, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 export default function ChatInboxScreen() {
@@ -117,14 +117,14 @@ const styles = StyleSheet.create({
     minWidth: 22,
     height: 22,
     borderRadius: 11,
-    backgroundColor: '#208AEF',
+    backgroundColor: AccentColor,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: Spacing.one,
   },
   badgeText: { color: '#fff', fontWeight: '700' },
   button: {
-    backgroundColor: '#208AEF',
+    backgroundColor: AccentColor,
     borderRadius: Spacing.two,
     padding: Spacing.three,
     alignItems: 'center',

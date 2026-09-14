@@ -9,7 +9,7 @@ import { CategoryBox } from '@/components/category-box';
 import { FavoriteMovieRow } from '@/components/favorite-movie-row';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { AccentColor, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 export default function MatchDetailScreen() {
@@ -136,7 +136,7 @@ const styles = StyleSheet.create({
   cardTitle: { marginBottom: Spacing.one },
   statRow: { flexDirection: 'row', justifyContent: 'space-between' },
   button: {
-    backgroundColor: '#208AEF',
+    backgroundColor: AccentColor,
     borderRadius: Spacing.two,
     padding: Spacing.three,
     alignItems: 'center',

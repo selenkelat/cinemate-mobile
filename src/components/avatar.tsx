@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
+import { AccentColor } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 interface AvatarProps {
@@ -43,7 +44,7 @@ export function Avatar({ avatarUrl, displayName, size = 120, onPress, style }: A
     return (
       <Pressable onPress={onPress} style={style}>
         {content}
-        <View style={[styles.editBadge, { backgroundColor: '#208AEF', borderColor: theme.background }]}>
+        <View style={[styles.editBadge, { backgroundColor: AccentColor, borderColor: theme.background }]}>
           <ThemedText style={styles.editBadgeIcon}>✎</ThemedText>
         </View>
       </Pressable>

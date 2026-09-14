@@ -4,7 +4,7 @@ import { Pressable, StyleSheet } from 'react-native';
 import { useAuth } from '@/auth/AuthContext';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { AccentColor, Spacing } from '@/constants/theme';
 
 export default function SettingsScreen() {
   const { logout } = useAuth();
@@ -35,7 +35,7 @@ const styles = StyleSheet.create({
   title: { textAlign: 'center' },
   button: {
     marginTop: Spacing.four,
-    backgroundColor: '#208AEF',
+    backgroundColor: AccentColor,
     borderRadius: Spacing.two,
     paddingHorizontal: Spacing.four,
     paddingVertical: Spacing.three,

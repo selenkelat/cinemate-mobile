@@ -1,5 +1,6 @@
 import { Tabs } from 'expo-router';
 
+import { AccentColor } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 export default function TabsLayout() {
@@ -10,7 +11,7 @@ export default function TabsLayout() {
       initialRouteName="profile"
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: '#208AEF',
+        tabBarActiveTintColor: AccentColor,
         tabBarInactiveTintColor: theme.textSecondary,
         tabBarStyle: { backgroundColor: theme.background },
       }}>

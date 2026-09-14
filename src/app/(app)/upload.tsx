@@ -7,7 +7,7 @@ import { ApiError } from '@/api/client';
 import { exportsApi, type UploadExportResponse } from '@/api/exports';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { AccentColor, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 type PickedFile = DocumentPicker.DocumentPickerAsset;
@@ -155,7 +155,7 @@ const styles = StyleSheet.create({
   error: { color: '#d33', textAlign: 'center' },
   uploadingRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: Spacing.two },
   button: {
-    backgroundColor: '#208AEF',
+    backgroundColor: AccentColor,
     borderRadius: Spacing.two,
     padding: Spacing.three,
     alignItems: 'center',

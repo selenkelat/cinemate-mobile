@@ -8,7 +8,7 @@ import { matchesApi, type MatchCandidateDto } from '@/api/matches';
 import { Avatar } from '@/components/avatar';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { AccentColor, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 // Card-per-candidate, full screen, swipe up for the next one. There's no "like"/"reject" here —
@@ -184,7 +184,7 @@ const styles = StyleSheet.create({
   avatar: { marginBottom: Spacing.two },
   name: { textAlign: 'center' },
   username: { textAlign: 'center', marginTop: -Spacing.one },
-  score: { color: '#208AEF', marginTop: Spacing.three },
+  score: { color: AccentColor, marginTop: Spacing.three },
   favoritesCard: { borderRadius: Spacing.two, padding: Spacing.three, marginTop: Spacing.two, alignItems: 'center' },
   favoritesTitle: { marginBottom: Spacing.two },
   posterRow: { flexDirection: 'row', gap: Spacing.two },
@@ -194,14 +194,14 @@ const styles = StyleSheet.create({
   chip: { borderRadius: Spacing.four, paddingHorizontal: Spacing.two, paddingVertical: Spacing.half },
   messageButton: {
     marginTop: Spacing.four,
-    backgroundColor: '#208AEF',
+    backgroundColor: AccentColor,
     borderRadius: Spacing.two,
     paddingHorizontal: Spacing.five,
     paddingVertical: Spacing.three,
   },
   messageButtonText: { color: '#fff', fontWeight: '600' },
   button: {
-    backgroundColor: '#208AEF',
+    backgroundColor: AccentColor,
     borderRadius: Spacing.two,
     padding: Spacing.three,
     alignItems: 'center',

@@ -7,7 +7,7 @@ import { ApiError } from '@/api/client';
 import { moviesApi } from '@/api/movies';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { AccentColor, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 interface GridMovie {
@@ -113,7 +113,7 @@ const styles = StyleSheet.create({
   poster: { width: '100%', aspectRatio: 2 / 3, borderRadius: Spacing.half },
   cellTitle: { textAlign: 'center' },
   button: {
-    backgroundColor: '#208AEF',
+    backgroundColor: AccentColor,
     borderRadius: Spacing.two,
     padding: Spacing.three,
     alignItems: 'center',
