@@ -9,6 +9,7 @@ import { ApiError } from '@/api/client';
 import { profileApi, type FavoriteMovieDto, type UserProfileDto } from '@/api/profile';
 import { useAuth } from '@/auth/AuthContext';
 import { Avatar } from '@/components/avatar';
+import { CategoryBox } from '@/components/category-box';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
@@ -148,11 +149,16 @@ export default function ProfileScreen() {
         )}
       </ThemedView>
 
-      <ThemedView type="backgroundElement" style={styles.card}>
-        <StatRow label="Watched" value={profile.watchedCount} />
-        <StatRow label="Rated" value={profile.ratedCount} />
-        <StatRow label="Liked" value={profile.likedCount} />
-      </ThemedView>
+      <CategoryBox
+        title="Watched"
+        count={profile.watchedCount}
+        onPress={() => router.push({ pathname: '/movie-list', params: { title: 'Watched', source: 'watched' } })}
+      />
+      <CategoryBox
+        title="Liked"
+        count={profile.likedCount}
+        onPress={() => router.push({ pathname: '/movie-list', params: { title: 'Liked', source: 'liked' } })}
+      />
 
       <ThemedView type="backgroundElement" style={styles.card}>
         <ThemedText type="smallBold" style={styles.cardTitle}>
@@ -162,6 +168,7 @@ export default function ProfileScreen() {
           <ThemedText themeColor="textSecondary">No ratings yet.</ThemedText>
         ) : (
           <>
+            <StatRow label="Rated" value={profile.ratedCount} />
             <StatRow label="Average" value={profile.ratingStats.average!} />
             <StatRow label="Median" value={profile.ratingStats.median!} />
           </>
