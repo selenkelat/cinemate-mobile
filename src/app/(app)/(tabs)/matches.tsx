@@ -5,6 +5,7 @@ import { ActivityIndicator, FlatList, Pressable, StyleSheet, View } from 'react-
 
 import { ApiError } from '@/api/client';
 import { matchesApi, type MatchCandidateDto } from '@/api/matches';
+import { Avatar } from '@/components/avatar';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
@@ -102,9 +103,7 @@ function CandidateCard({ candidate, height }: { candidate: MatchCandidateDto; he
     <Pressable
       style={[styles.card, { height }]}
       onPress={() => router.push({ pathname: '/match/[userId]', params: { userId: String(candidate.userId) } })}>
-      <View style={[styles.avatar, { backgroundColor: theme.backgroundSelected }]}>
-        <ThemedText type="title">{candidate.displayName.charAt(0).toUpperCase()}</ThemedText>
-      </View>
+      <Avatar avatarUrl={candidate.avatarUrl} displayName={candidate.displayName} style={styles.avatar} />
 
       <ThemedText type="subtitle" style={styles.name}>
         {candidate.displayName}
@@ -177,14 +176,7 @@ const styles = StyleSheet.create({
     padding: Spacing.five,
     gap: Spacing.two,
   },
-  avatar: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: Spacing.two,
-  },
+  avatar: { marginBottom: Spacing.two },
   name: { textAlign: 'center' },
   username: { textAlign: 'center', marginTop: -Spacing.one },
   score: { color: '#208AEF', marginTop: Spacing.three },

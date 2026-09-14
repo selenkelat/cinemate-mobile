@@ -1,11 +1,14 @@
 import { Image } from 'expo-image';
+import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
+import { avatarApi } from '@/api/avatar';
 import { ApiError } from '@/api/client';
 import { profileApi, type FavoriteMovieDto, type UserProfileDto } from '@/api/profile';
 import { useAuth } from '@/auth/AuthContext';
+import { Avatar } from '@/components/avatar';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
@@ -17,6 +20,8 @@ export default function ProfileScreen() {
   const [profile, setProfile] = useState<UserProfileDto | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isSavingAvatar, setIsSavingAvatar] = useState(false);
+  const [avatarError, setAvatarError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setIsLoading(true);
@@ -35,6 +40,49 @@ export default function ProfileScreen() {
   useEffect(() => {
     load();
   }, [load]);
+
+  const onAvatarPress = async () => {
+    setAvatarError(null);
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      setAvatarError('Photo library access is needed to set a profile picture.');
+      return;
+    }
+
+    const picked = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.7,
+    });
+    if (picked.canceled) return;
+
+    const asset = picked.assets[0];
+    setIsSavingAvatar(true);
+    try {
+      const result = await avatarApi.upload({ uri: asset.uri, name: asset.fileName ?? 'avatar.jpg' });
+      setProfile((prev) => (prev ? { ...prev, avatarUrl: result.avatarUrl } : prev));
+    } catch (err) {
+      console.error('Avatar upload failed:', err);
+      setAvatarError(err instanceof ApiError ? err.message : "Couldn't reach the server. Check your connection and try again.");
+    } finally {
+      setIsSavingAvatar(false);
+    }
+  };
+
+  const onRemoveAvatar = async () => {
+    setAvatarError(null);
+    setIsSavingAvatar(true);
+    try {
+      await avatarApi.remove();
+      setProfile((prev) => (prev ? { ...prev, avatarUrl: null } : prev));
+    } catch (err) {
+      console.error('Avatar removal failed:', err);
+      setAvatarError(err instanceof ApiError ? err.message : "Couldn't reach the server. Check your connection and try again.");
+    } finally {
+      setIsSavingAvatar(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -70,8 +118,23 @@ export default function ProfileScreen() {
         </Pressable>
       </View>
 
-      <View style={[styles.avatar, { backgroundColor: theme.backgroundSelected }]}>
-        <ThemedText type="title">{(user?.displayName ?? '?').charAt(0).toUpperCase()}</ThemedText>
+      <View style={styles.avatarSection}>
+        <Avatar
+          avatarUrl={profile.avatarUrl}
+          displayName={user?.displayName ?? '?'}
+          onPress={isSavingAvatar ? undefined : onAvatarPress}
+          style={styles.avatar}
+        />
+        {isSavingAvatar ? (
+          <ActivityIndicator color={theme.text} />
+        ) : (
+          profile.avatarUrl && (
+            <Pressable onPress={onRemoveAvatar}>
+              <ThemedText type="linkPrimary">Remove photo</ThemedText>
+            </Pressable>
+          )
+        )}
+        {avatarError ? <ThemedText style={styles.error}>{avatarError}</ThemedText> : null}
       </View>
 
       <ThemedView type="backgroundElement" style={styles.card}>
@@ -164,14 +227,8 @@ const styles = StyleSheet.create({
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: Spacing.four, gap: Spacing.three },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   title: { textAlign: 'center' },
-  avatar: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    alignSelf: 'center',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  avatarSection: { alignItems: 'center', gap: Spacing.two },
+  avatar: {},
   error: { color: '#d33', textAlign: 'center' },
   card: { borderRadius: Spacing.two, padding: Spacing.three, gap: Spacing.two },
   cardTitle: { marginBottom: Spacing.one },

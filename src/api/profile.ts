@@ -28,6 +28,7 @@ export interface UserProfileDto {
   ratedCount: number;
   likedCount: number;
   favoriteMovies: FavoriteMovieDto[];
+  avatarUrl: string | null;
 }
 
 export const profileApi = {

@@ -16,6 +16,7 @@ export interface MatchCandidateDto {
   watchedOverlapCount: number;
   favoriteMovies: CandidateFavoriteMovieDto[];
   topGenres: string[];
+  avatarUrl: string | null;
 }
 
 // Mirrors Cinemate.Models.Dto.MovieOverlapDto field-for-field.
