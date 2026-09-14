@@ -37,9 +37,15 @@ export function Avatar({ avatarUrl, displayName, size = 120, onPress, style }: A
     );
 
   if (onPress) {
+    // The edit badge only shows when onPress is given (Profile's own avatar) — Matches deck
+    // cards render other people's avatars with no onPress, so no badge there. It signals the
+    // avatar is tappable at all, which "tap the photo to change it" isn't otherwise obvious.
     return (
       <Pressable onPress={onPress} style={style}>
         {content}
+        <View style={[styles.editBadge, { backgroundColor: '#208AEF', borderColor: theme.background }]}>
+          <ThemedText style={styles.editBadgeIcon}>✎</ThemedText>
+        </View>
       </Pressable>
     );
   }
@@ -50,4 +56,16 @@ export function Avatar({ avatarUrl, displayName, size = 120, onPress, style }: A
 const styles = StyleSheet.create({
   image: {},
   placeholder: { alignItems: 'center', justifyContent: 'center' },
+  editBadge: {
+    position: 'absolute',
+    right: 0,
+    bottom: 0,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  editBadgeIcon: { color: '#fff', fontSize: 14, lineHeight: 16 },
 });
