@@ -76,12 +76,14 @@ export default function ConversationScreen() {
 
   // Fires once per screen visit, right after history loads — "opened the thread" semantics,
   // matching the backend's per-conversation high-water mark rather than tracking per message.
+  // Skipped for a brand-new conversation (summary === null, e.g. the first time messaging
+  // someone from their match card): no Conversation row exists yet, so this would 404.
   useEffect(() => {
-    if (loadState === 'ready' && !markedReadRef.current) {
+    if (loadState === 'ready' && summary !== null && !markedReadRef.current) {
       markedReadRef.current = true;
       chatApi.markRead(otherUserId).catch((err) => console.error('Mark read failed:', err));
     }
-  }, [loadState, otherUserId]);
+  }, [loadState, summary, otherUserId]);
 
   const loadOlder = useCallback(async () => {
     if (isLoadingOlder || !hasMoreOlder || messages.length === 0) return;
