@@ -117,18 +117,23 @@ function CandidateCard({ candidate, height }: { candidate: MatchCandidateDto; he
       </ThemedText>
 
       {candidate.favoriteMovies.length > 0 && (
-        <View style={styles.posterRow}>
-          {candidate.favoriteMovies.map((favorite) =>
-            favorite.posterUrl ? (
-              <Image key={favorite.movieId} source={{ uri: favorite.posterUrl }} style={styles.poster} contentFit="cover" />
-            ) : (
-              <View
-                key={favorite.movieId}
-                style={[styles.poster, { backgroundColor: theme.backgroundSelected }]}
-              />
-            ),
-          )}
-        </View>
+        <ThemedView type="backgroundElement" style={styles.favoritesCard}>
+          <ThemedText type="smallBold" style={styles.favoritesTitle}>
+            Favorites
+          </ThemedText>
+          <View style={styles.posterRow}>
+            {candidate.favoriteMovies.map((favorite) =>
+              favorite.posterUrl ? (
+                <Image key={favorite.movieId} source={{ uri: favorite.posterUrl }} style={styles.poster} contentFit="cover" />
+              ) : (
+                <View
+                  key={favorite.movieId}
+                  style={[styles.poster, { backgroundColor: theme.backgroundSelected }]}
+                />
+              ),
+            )}
+          </View>
+        </ThemedView>
       )}
 
       <ThemedText themeColor="textSecondary" style={styles.overlapText}>
@@ -180,7 +185,9 @@ const styles = StyleSheet.create({
   name: { textAlign: 'center' },
   username: { textAlign: 'center', marginTop: -Spacing.one },
   score: { color: '#208AEF', marginTop: Spacing.three },
-  posterRow: { flexDirection: 'row', gap: Spacing.two, marginTop: Spacing.two },
+  favoritesCard: { borderRadius: Spacing.two, padding: Spacing.three, marginTop: Spacing.two, alignItems: 'center' },
+  favoritesTitle: { marginBottom: Spacing.two },
+  posterRow: { flexDirection: 'row', gap: Spacing.two },
   poster: { width: 40, height: 60, borderRadius: Spacing.half },
   overlapText: { marginTop: Spacing.one },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: Spacing.one, marginTop: Spacing.one },
