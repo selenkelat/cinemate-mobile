@@ -6,6 +6,7 @@ import { chatApi, type ConversationSummaryDto, type MessageDto } from '@/api/cha
 import { ApiError } from '@/api/client';
 import { useAuth } from '@/auth/AuthContext';
 import { useChatSocket } from '@/chat/useChatSocket';
+import { useUnread } from '@/chat/UnreadContext';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AccentColor, Spacing } from '@/constants/theme';
@@ -20,6 +21,7 @@ export default function ConversationScreen() {
   const otherUserId = Number(otherUserIdParam);
   const { user } = useAuth();
   const theme = useTheme();
+  const { refreshUnread } = useUnread();
 
   const [loadState, setLoadState] = useState<LoadState>('loading');
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -81,9 +83,12 @@ export default function ConversationScreen() {
   useEffect(() => {
     if (loadState === 'ready' && summary !== null && !markedReadRef.current) {
       markedReadRef.current = true;
-      chatApi.markRead(otherUserId).catch((err) => console.error('Mark read failed:', err));
+      chatApi
+        .markRead(otherUserId)
+        .then(() => refreshUnread())
+        .catch((err) => console.error('Mark read failed:', err));
     }
-  }, [loadState, summary, otherUserId]);
+  }, [loadState, summary, otherUserId, refreshUnread]);
 
   const loadOlder = useCallback(async () => {
     if (isLoadingOlder || !hasMoreOlder || messages.length === 0) return;

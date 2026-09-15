@@ -1,6 +1,7 @@
 import { Redirect, Stack } from 'expo-router';
 
 import { useAuth } from '@/auth/AuthContext';
+import { UnreadProvider } from '@/chat/UnreadContext';
 
 export default function AppLayout() {
   const { user, isLoading } = useAuth();
@@ -8,5 +9,9 @@ export default function AppLayout() {
   if (isLoading) return null; // cold-start session restore still in flight
   if (!user) return <Redirect href="/login" />;
 
-  return <Stack screenOptions={{ headerShown: false }} />;
+  return (
+    <UnreadProvider>
+      <Stack screenOptions={{ headerShown: false }} />
+    </UnreadProvider>
+  );
 }

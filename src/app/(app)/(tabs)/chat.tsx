@@ -4,6 +4,7 @@ import { ActivityIndicator, FlatList, Pressable, StyleSheet, View } from 'react-
 
 import { ApiError } from '@/api/client';
 import { chatApi, type ConversationSummaryDto } from '@/api/chat';
+import { useUnread } from '@/chat/UnreadContext';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AccentColor, Spacing } from '@/constants/theme';
@@ -11,6 +12,7 @@ import { useTheme } from '@/hooks/use-theme';
 
 export default function ChatInboxScreen() {
   const theme = useTheme();
+  const { reportUnread } = useUnread();
   const [conversations, setConversations] = useState<ConversationSummaryDto[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -20,17 +22,18 @@ export default function ChatInboxScreen() {
     try {
       const result = await chatApi.getConversations();
       setConversations(result);
+      reportUnread(result); // feeds the tab bar badge from data this screen already fetched
     } catch (err) {
       console.error('Load conversations failed:', err);
       setError(err instanceof ApiError ? err.message : "Couldn't reach the server. Check your connection and try again.");
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [reportUnread]);
 
-  // Re-fetches every time this tab regains focus — there's no shared/global state for unread
-  // counts in this app, so "reload on focus" is the simplest way to keep them current after
-  // reading a conversation or receiving a new message elsewhere.
+  // Re-fetches every time this tab regains focus — there's no shared/global state for the
+  // conversation list itself in this app, so "reload on focus" is the simplest way to keep it
+  // current after reading a conversation or receiving a new message elsewhere.
   useFocusEffect(
     useCallback(() => {
       load();
