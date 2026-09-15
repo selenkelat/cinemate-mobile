@@ -6,10 +6,10 @@ Read the exact versioned docs at https://docs.expo.dev/versions/v57.0.0/ before 
 
 Cinemate mobile — React Native / Expo Router client for the Cinemate backend (Letterboxd-taste
 matching + chat). **Sibling repo, not a monorepo:** the backend lives at
-`C:\Users\Selen\Documents\cinemate_yeni` (ASP.NET Core 8) — its `CLAUDE.md` is the source of truth
-for API/DTO shapes, auth flow, and WebSocket protocol; don't guess a request/response shape here,
-read it there. This repo has no server code and no web target — mobile-only (iOS/Android via
-Expo Go during dev; no EAS/App Store build has been done yet).
+`https://github.com/selenkelat/cinemate.git` (ASP.NET Core 8) — its `CLAUDE.md` is the source of
+truth for API/DTO shapes, auth flow, and WebSocket protocol; don't guess a request/response shape
+here, read it there. This repo has no server code and no web target — mobile-only (iOS/Android
+via Expo Go during dev; no EAS/App Store build has been done yet).
 
 ## Hard constraints
 
