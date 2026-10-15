@@ -82,8 +82,10 @@ URLs (TMDB CDN or Cloudinary) — the client never constructs an image URL itsel
 `apiRequestWithHeaders<T>` is the same request path (shared token/401-retry/error handling) but
 also returns the response `Headers` — used only by `matchesApi.getCandidates`, which reads the
 backend's `X-Is-Premium`/`X-Total-Candidates` (free-tier discovery cap; the body stays a bare
-array so older builds don't break). A `403` from `GET /api/match/{id}` means "outside today's
-free picks" — `match/[userId].tsx` shows a dedicated locked state for it, not a retryable error.
+array so older builds don't break). A `403` from `GET /api/match/{id}` means a free caller was
+never shown this person in any daily pick and has no chat with them (previously shown people and
+chat partners stay open, backend-side) — `match/[userId].tsx` shows a dedicated locked state for
+it, not a retryable error.
 Both that locked state and the Matches deck's end card use `src/components/premium-cta.tsx` for
 the upsell; its button shows a "coming soon" alert until the Phase 2 RevenueCat paywall exists —
 the exported `showPremiumComingSoon()` is the one place to wire paywall navigation in (also used
@@ -96,8 +98,7 @@ dimmed with a "Premium" tag (tap → the coming-soon alert; the backend 403s a f
 the row is hidden when `X-Is-Premium` is missing. The row also stays visible on the empty state,
 so a premium user at 90% can always step back down, and a 403 on a filtered request (Premium
 lapsed mid-session) resets the filter to 50. The selection is screen state only — kept across tab
-switches, reset on app restart (no persistent storage dependency for this). The row sits under
-the status bar without `useSafeAreaInsets().top` padding — tab screens have no header.
+switches, reset on app restart (no persistent storage dependency for this).
 
 Match detail has a Premium "Watch next" section (`matchesApi.getRecommendations` →
 `GET /api/match/{id}/recommendations`): two `CategoryBox`es, "{name}'s picks for you" and "Your
@@ -118,9 +119,27 @@ confirms with an `Alert`, since it removes for both. A blocked conversation show
 read-only. No live updates — it reloads on focus (`useFocusEffect`); a 403 on a write (Premium
 lapsed / blocked mid-session) reloads to show the right state.
 
-**Screens without a navigation header** (tabs, chat, shared list — every `Stack`/`Tabs` here
-has `headerShown: false`) must pad their top with `useSafeAreaInsets().top`, or the first row
-sits under the status bar/notch and can't be tapped (hit on device for both Matches and chat).
+**Every screen starts with `src/components/screen-header.tsx`** (`ScreenHeader`). Every
+`Stack`/`Tabs` here has `headerShown: false`, so it's what pads the top with
+`useSafeAreaInsets().top` — without it the first row sits under the status bar/notch and can't be
+tapped (hit on device for both Matches and chat) — and gives pushed screens a "‹" back button
+(rendered only when `router.canGoBack()`, so e.g. Upload as the onboarding landing has none). It
+has no horizontal padding of its own; it sits inside each screen's padded container. Exceptions:
+the centered login/register screens and loading/error states.
+
+**Profile card** (`src/components/profile-card.tsx`, `ProfileCard`): the shared big-card layout —
+photo on top (letter placeholder, no gradient: that'd need `expo-linear-gradient`), name + `@user`
+with a big accent stat on the right, four favorite poster slots, "N films in common" + genre chips,
+optional action button / PREMIUM badge / tappable photo. Used by the Matches deck (`fill` mode,
+"Message" action, card tap → profile; header shows "N of M today" from `onViewableItemsChanged`),
+someone else's profile (`match/[userId].tsx`; the existing sections follow below the card), and
+your own Profile tab ("Films watched", favorites "Edit" → `/favorites`, PREMIUM badge from
+`GET /api/me/subscription`, photo tap = change photo). The chat screen's header strip (avatar +
+name) opens `/match/[id]` with `from=chat`; that screen's "Message" then just goes back instead of
+pushing a second chat screen — a second socket would be closed by the backend's
+one-connection-per-user rule. Tab icons use `expo-symbols` (`SymbolView`, SF Symbols on iOS,
+Material Symbols on Android — already a dependency). A `CategoryBox` with count 0 (and not
+`locked`) is dimmed and untappable.
 
 ## Known platform gotchas (already hit, don't re-debug)
 
