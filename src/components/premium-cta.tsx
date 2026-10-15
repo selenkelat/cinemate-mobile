@@ -7,10 +7,14 @@ import { AccentColor, Spacing } from '@/constants/theme';
 // Shared upsell block for anywhere the free-tier cap shows (Matches deck end card, locked match
 // detail). There's no paywall yet (RevenueCat purchase flow is Phase 2), so the button shows an
 // honest "coming soon" instead of being a dead tap — swap onPress for paywall navigation then.
+// Exported so smaller premium touchpoints (e.g. the locked match-% filter chips) show the exact
+// same message — the one place to swap for paywall navigation in Phase 2.
+export function showPremiumComingSoon() {
+  Alert.alert('Premium is coming soon', "Subscriptions aren't available yet — we'll let you know when they are.");
+}
+
 export function PremiumCta({ description }: { description: string }) {
-  const onPress = () => {
-    Alert.alert('Premium is coming soon', "Subscriptions aren't available yet — we'll let you know when they are.");
-  };
+  const onPress = showPremiumComingSoon;
 
   return (
     <ThemedView type="backgroundElement" style={styles.card}>

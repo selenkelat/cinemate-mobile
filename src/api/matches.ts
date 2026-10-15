@@ -72,8 +72,11 @@ function parseCount(value: string | null): number | null {
 }
 
 export const matchesApi = {
-  getCandidates: async (): Promise<CandidatesResult> => {
-    const { data, headers } = await apiRequestWithHeaders<MatchCandidateDto[]>('/api/match/candidates', { auth: true });
+  // minScore is the Premium "only X%+" filter — the backend 403s it for a free caller and 400s
+  // anything below its chat threshold or above 100. Omit it for the default list.
+  getCandidates: async (minScore?: number): Promise<CandidatesResult> => {
+    const path = minScore === undefined ? '/api/match/candidates' : `/api/match/candidates?minScore=${minScore}`;
+    const { data, headers } = await apiRequestWithHeaders<MatchCandidateDto[]>(path, { auth: true });
     return {
       candidates: data,
       isPremium: parseIsPremium(headers.get('X-Is-Premium')),
