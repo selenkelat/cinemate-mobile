@@ -50,6 +50,13 @@ export interface MatchResultDto {
   sharedRatedCount: number;
 }
 
+// Mirrors Cinemate.Models.Dto.WatchRecommendationsDto field-for-field. Premium-only (403 for a
+// free caller); each list is already in display order, highest-rated first.
+export interface WatchRecommendationsDto {
+  forYou: MovieOverlapDto;
+  forThem: MovieOverlapDto;
+}
+
 // The body stays a bare MatchCandidateDto[] (backend MatchController keeps it that way so older
 // app builds don't break); premium status and the full pre-cap count ride on response headers.
 // Both are null if the header is missing or malformed — callers then just skip any upsell UI.
@@ -84,4 +91,6 @@ export const matchesApi = {
     };
   },
   get: (otherUserId: number) => apiRequest<MatchResultDto>(`/api/match/${otherUserId}`, { auth: true }),
+  getRecommendations: (otherUserId: number) =>
+    apiRequest<WatchRecommendationsDto>(`/api/match/${otherUserId}/recommendations`, { auth: true }),
 };

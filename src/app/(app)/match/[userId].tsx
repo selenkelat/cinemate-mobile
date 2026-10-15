@@ -3,11 +3,11 @@ import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { ApiError } from '@/api/client';
-import { matchesApi, type MatchResultDto } from '@/api/matches';
+import { matchesApi, type MatchResultDto, type WatchRecommendationsDto } from '@/api/matches';
 import { Avatar } from '@/components/avatar';
 import { CategoryBox } from '@/components/category-box';
 import { FavoriteMovieRow } from '@/components/favorite-movie-row';
-import { PremiumCta } from '@/components/premium-cta';
+import { PremiumCta, showPremiumComingSoon } from '@/components/premium-cta';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AccentColor, Spacing } from '@/constants/theme';
@@ -45,6 +45,33 @@ export default function MatchDetailScreen() {
   useEffect(() => {
     load();
   }, [load]);
+
+  // Premium "watch next" lists, fetched separately once the match itself has loaded so the rest
+  // of the screen never waits on them. null = loading or failed (section hidden); 'locked' = 403
+  // for a free caller (section shown locked).
+  const [recommendations, setRecommendations] = useState<WatchRecommendationsDto | 'locked' | null>(null);
+
+  useEffect(() => {
+    if (!match) return;
+    let cancelled = false;
+    setRecommendations(null);
+    matchesApi
+      .getRecommendations(match.user2Id)
+      .then((result) => {
+        if (!cancelled) setRecommendations(result);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        if (err instanceof ApiError && err.status === 403) {
+          setRecommendations('locked');
+          return;
+        }
+        console.error('Load watch recommendations failed:', err);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [match]);
 
   if (isLoading) {
     return (
@@ -131,6 +158,33 @@ export default function MatchDetailScreen() {
         onPress={() => openOverlap('Watched together', match.watchedOverlap.movies)}
       />
 
+      {recommendations !== null && (
+        <>
+          <ThemedText type="smallBold" style={styles.sectionTitle}>
+            Watch next
+          </ThemedText>
+          {recommendations === 'locked' ? (
+            <>
+              <CategoryBox title={`${match.displayName}'s picks for you`} count={0} locked onPress={showPremiumComingSoon} />
+              <CategoryBox title={`Your picks for ${match.displayName}`} count={0} locked onPress={showPremiumComingSoon} />
+            </>
+          ) : (
+            <>
+              <CategoryBox
+                title={`${match.displayName}'s picks for you`}
+                count={recommendations.forYou.count}
+                onPress={() => openOverlap(`${match.displayName}'s picks for you`, recommendations.forYou.movies)}
+              />
+              <CategoryBox
+                title={`Your picks for ${match.displayName}`}
+                count={recommendations.forThem.count}
+                onPress={() => openOverlap(`Your picks for ${match.displayName}`, recommendations.forThem.movies)}
+              />
+            </>
+          )}
+        </>
+      )}
+
       <Pressable
         style={styles.button}
         onPress={() =>
@@ -163,6 +217,7 @@ const styles = StyleSheet.create({
   lockedText: { textAlign: 'center' },
   card: { borderRadius: Spacing.two, padding: Spacing.three, gap: Spacing.two },
   cardTitle: { marginBottom: Spacing.one },
+  sectionTitle: { marginTop: Spacing.two, marginBottom: -Spacing.one },
   statRow: { flexDirection: 'row', justifyContent: 'space-between' },
   button: {
     backgroundColor: AccentColor,
