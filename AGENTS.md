@@ -96,7 +96,16 @@ dimmed with a "Premium" tag (tap → the coming-soon alert; the backend 403s a f
 the row is hidden when `X-Is-Premium` is missing. The row also stays visible on the empty state,
 so a premium user at 90% can always step back down, and a 403 on a filtered request (Premium
 lapsed mid-session) resets the filter to 50. The selection is screen state only — kept across tab
-switches, reset on app restart (no persistent storage dependency for this).
+switches, reset on app restart (no persistent storage dependency for this). The row sits under
+the status bar without `useSafeAreaInsets().top` padding — tab screens have no header.
+
+Match detail has a Premium "Watch next" section (`matchesApi.getRecommendations` →
+`GET /api/match/{id}/recommendations`): two `CategoryBox`es, "{name}'s picks for you" and "Your
+picks for {name}", opening the same `movie-list` screen as the overlap boxes (lists arrive
+already ordered, highest-rated first; ratings themselves are never sent). It's fetched separately
+after the match loads, so it never delays the screen; a 403 (free caller) shows both boxes with
+`CategoryBox`'s `locked` prop ("Premium" label instead of a count, tap → `showPremiumComingSoon()`),
+any other failure just hides the section.
 
 ## Known platform gotchas (already hit, don't re-debug)
 
