@@ -107,6 +107,21 @@ after the match loads, so it never delays the screen; a 403 (free caller) shows 
 `CategoryBox`'s `locked` prop ("Premium" label instead of a count, tap → `showPremiumComingSoon()`),
 any other failure just hides the section.
 
+Shared watch list (`src/api/shared-list.ts`, `src/app/(app)/shared-list/[otherUserId].tsx`):
+opened from the chat header's "List" link, shown only once a conversation exists (the backend
+404s otherwise); the other person's display name rides along as a `name` route param. Open only
+while **both** sides are premium — GET always succeeds and its `callerIsPremium`/`otherIsPremium`
+flags pick the locked state (`PremiumCta` if you're not premium, "{name} needs Premium too."
+if only they aren't). When open: a debounced (400 ms, ≥ 2 chars) TMDB search via
+`GET /api/movies/search` replaces the list while a query is typed; Add posts the TMDB id; Remove
+confirms with an `Alert`, since it removes for both. A blocked conversation shows the list
+read-only. No live updates — it reloads on focus (`useFocusEffect`); a 403 on a write (Premium
+lapsed / blocked mid-session) reloads to show the right state.
+
+**Screens without a navigation header** (tabs, chat, shared list — every `Stack`/`Tabs` here
+has `headerShown: false`) must pad their top with `useSafeAreaInsets().top`, or the first row
+sits under the status bar/notch and can't be tapped (hit on device for both Matches and chat).
+
 ## Known platform gotchas (already hit, don't re-debug)
 
 - **Expo SDK 57's `fetch(uri).blob()` doesn't reliably set a correct `Content-Type` for a local
