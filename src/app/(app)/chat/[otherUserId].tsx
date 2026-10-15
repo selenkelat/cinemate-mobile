@@ -1,13 +1,14 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, KeyboardAvoidingView, Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { chatApi, type ConversationSummaryDto, type MessageDto } from '@/api/chat';
 import { ApiError } from '@/api/client';
 import { useAuth } from '@/auth/AuthContext';
 import { useChatSocket } from '@/chat/useChatSocket';
 import { useUnread } from '@/chat/UnreadContext';
+import { Avatar } from '@/components/avatar';
+import { ScreenHeader } from '@/components/screen-header';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AccentColor, Spacing } from '@/constants/theme';
@@ -20,7 +21,6 @@ type LoadState = 'loading' | 'error' | 'ready';
 export default function ConversationScreen() {
   const { otherUserId: otherUserIdParam } = useLocalSearchParams<{ otherUserId: string }>();
   const otherUserId = Number(otherUserIdParam);
-  const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const theme = useTheme();
   const { refreshUnread } = useUnread();
@@ -162,13 +162,12 @@ export default function ConversationScreen() {
       style={styles.flex}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={Spacing.six}>
-      {/* No navigation header, so the inset keeps the List/Block links out from under the
-          status bar/notch where they couldn't be tapped. */}
-      <ThemedView style={[styles.container, { paddingTop: insets.top + Spacing.two }]}>
-        <View style={styles.header}>
-          <ThemedText type="smallBold" numberOfLines={1} style={styles.headerTitle}>
-            {summary?.otherDisplayName ?? `User ${otherUserId}`}
-          </ThemedText>
+      <ThemedView style={styles.container}>
+        <ScreenHeader
+          showBack
+          style={styles.header}
+          right={
+            <View style={styles.headerActions}>
           {/* Shared lists hang off an existing conversation — none to open before the first one. */}
           {summary !== null && (
             <Pressable
@@ -191,7 +190,21 @@ export default function ConversationScreen() {
               <ThemedText type="linkPrimary">{isBlocking ? 'Blocking…' : 'Block'}</ThemedText>
             </Pressable>
           ) : null}
-        </View>
+            </View>
+          }>
+          {/* The strip: their photo + name, tapping through to their profile. from=chat tells the
+              profile's Message button to just come back here instead of opening a second chat. */}
+          <Pressable
+            style={styles.identity}
+            onPress={() =>
+              router.push({ pathname: '/match/[userId]', params: { userId: String(otherUserId), from: 'chat' } })
+            }>
+            <Avatar avatarUrl={summary?.otherAvatarUrl ?? null} displayName={summary?.otherDisplayName ?? '?'} size={36} />
+            <ThemedText type="smallBold" numberOfLines={1} style={styles.headerTitle}>
+              {summary?.otherDisplayName ?? `User ${otherUserId}`}
+            </ThemedText>
+          </Pressable>
+        </ScreenHeader>
 
         <FlatList
           data={messages}
@@ -271,14 +284,10 @@ const styles = StyleSheet.create({
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: Spacing.four, gap: Spacing.three },
   error: { color: '#d33', textAlign: 'center' },
   hint: { textAlign: 'center', padding: Spacing.four },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.four,
-    paddingBottom: Spacing.three,
-  },
-  headerTitle: { flex: 1, marginRight: Spacing.two },
+  header: { paddingHorizontal: Spacing.four },
+  headerActions: { flexDirection: 'row', alignItems: 'center' },
+  identity: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
+  headerTitle: { flexShrink: 1 },
   headerLink: { marginRight: Spacing.three },
   list: { flex: 1 },
   listContent: { padding: Spacing.four, gap: Spacing.two },

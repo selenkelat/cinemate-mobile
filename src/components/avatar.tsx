@@ -33,7 +33,10 @@ export function Avatar({ avatarUrl, displayName, size = 120, onPress, style }: A
       />
     ) : (
       <View style={[styles.placeholder, dimensions, { backgroundColor: theme.backgroundSelected }]}>
-        <ThemedText type="title">{displayName.charAt(0).toUpperCase()}</ThemedText>
+        {/* Letter scales with the circle — a fixed title size overflowed the small list/strip avatars. */}
+        <ThemedText style={{ fontSize: size * 0.42, lineHeight: size * 0.5, fontWeight: '600' }}>
+          {displayName.charAt(0).toUpperCase()}
+        </ThemedText>
       </View>
     );
 

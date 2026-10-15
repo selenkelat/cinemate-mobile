@@ -5,6 +5,7 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'reac
 
 import { ApiError } from '@/api/client';
 import { exportsApi, type UploadExportResponse } from '@/api/exports';
+import { ScreenHeader } from '@/components/screen-header';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AccentColor, Spacing } from '@/constants/theme';
@@ -98,7 +99,10 @@ export default function UploadScreen() {
   }
 
   return (
-    <ThemedView style={styles.container}>
+    <ThemedView style={styles.screen}>
+      {/* Back only when pushed from Settings — as the onboarding landing there's no history. */}
+      <ScreenHeader showBack style={styles.header} />
+      <View style={styles.container}>
       <ThemedText type="title" style={styles.title}>
         Import your Letterboxd export
       </ThemedText>
@@ -134,6 +138,7 @@ export default function UploadScreen() {
           <ThemedText style={styles.buttonText}>Choose export ZIP</ThemedText>
         </Pressable>
       )}
+      </View>
     </ThemedView>
   );
 }
@@ -148,6 +153,8 @@ function StatRow({ label, value }: { label: string; value: number }) {
 }
 
 const styles = StyleSheet.create({
+  screen: { flex: 1 },
+  header: { paddingHorizontal: Spacing.four },
   container: { flex: 1, justifyContent: 'center', padding: Spacing.four, gap: Spacing.three },
   title: { textAlign: 'center' },
   hint: { textAlign: 'center' },

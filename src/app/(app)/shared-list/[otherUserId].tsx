@@ -2,11 +2,11 @@ import { Image } from 'expo-image';
 import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Pressable, StyleSheet, TextInput, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ApiError } from '@/api/client';
 import { sharedListApi, type MovieSearchResultDto, type SharedListDto } from '@/api/shared-list';
 import { PremiumCta } from '@/components/premium-cta';
+import { ScreenHeader } from '@/components/screen-header';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AccentColor, Spacing } from '@/constants/theme';
@@ -22,7 +22,6 @@ export default function SharedListScreen() {
   const otherUserId = Number(otherUserIdParam);
   const otherName = name || `User ${otherUserId}`;
   const theme = useTheme();
-  const insets = useSafeAreaInsets();
 
   const [list, setList] = useState<SharedListDto | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -146,15 +145,18 @@ export default function SharedListScreen() {
 
   if (!list.callerIsPremium || !list.otherIsPremium) {
     return (
-      <ThemedView style={[styles.centered, { paddingTop: insets.top + Spacing.four }]}>
-        {title}
-        {!list.callerIsPremium ? (
-          <PremiumCta description={`Build a watch list together with ${otherName}. Needs Premium on both sides.`} />
-        ) : (
-          <ThemedText themeColor="textSecondary" style={styles.centerText}>
-            {otherName} needs Premium too. Shared lists unlock when you&apos;re both on Premium.
-          </ThemedText>
-        )}
+      <ThemedView style={styles.screen}>
+        <ScreenHeader showBack style={styles.header} />
+        <View style={styles.centered}>
+          {title}
+          {!list.callerIsPremium ? (
+            <PremiumCta description={`Build a watch list together with ${otherName}. Needs Premium on both sides.`} />
+          ) : (
+            <ThemedText themeColor="textSecondary" style={styles.centerText}>
+              {otherName} needs Premium too. Shared lists unlock when you&apos;re both on Premium.
+            </ThemedText>
+          )}
+        </View>
       </ThemedView>
     );
   }
@@ -162,8 +164,8 @@ export default function SharedListScreen() {
   const listedIds = new Set(list.items.map((i) => i.movieId));
 
   return (
-    <ThemedView style={[styles.container, { paddingTop: insets.top + Spacing.three }]}>
-      {title}
+    <ThemedView style={styles.container}>
+      <ScreenHeader title={`Watch list with ${otherName}`} showBack />
 
       {list.isBlocked ? (
         <ThemedText themeColor="textSecondary" style={styles.centerText}>
@@ -287,6 +289,8 @@ function MovieRow({
 }
 
 const styles = StyleSheet.create({
+  screen: { flex: 1 },
+  header: { paddingHorizontal: Spacing.four },
   container: { flex: 1, paddingHorizontal: Spacing.four, gap: Spacing.three },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: Spacing.four, gap: Spacing.three },
   title: { textAlign: 'center' },

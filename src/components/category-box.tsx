@@ -19,9 +19,15 @@ interface CategoryBoxProps {
 // dependency (project doesn't use one).
 export function CategoryBox({ title, count, onPress, locked = false }: CategoryBoxProps) {
   const theme = useTheme();
+  // Nothing to open — tapping used to land on an empty poster grid. Locked boxes stay tappable
+  // (their tap is the upsell), so this only applies to a real, known-empty count.
+  const isEmpty = !locked && count === 0;
 
   return (
-    <Pressable style={[styles.box, { backgroundColor: theme.backgroundElement }]} onPress={onPress}>
+    <Pressable
+      style={[styles.box, { backgroundColor: theme.backgroundElement, opacity: isEmpty ? 0.5 : 1 }]}
+      onPress={onPress}
+      disabled={isEmpty}>
       <ThemedText type="smallBold" style={styles.title}>
         {title}
       </ThemedText>
@@ -37,7 +43,7 @@ export function CategoryBox({ title, count, onPress, locked = false }: CategoryB
             </ThemedText>
           </View>
         )}
-        <ThemedText themeColor="textSecondary">›</ThemedText>
+        {!isEmpty && <ThemedText themeColor="textSecondary">›</ThemedText>}
       </View>
     </Pressable>
   );

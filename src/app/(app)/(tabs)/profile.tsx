@@ -6,10 +6,11 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'reac
 import { avatarApi } from '@/api/avatar';
 import { ApiError } from '@/api/client';
 import { profileApi, type UserProfileDto } from '@/api/profile';
+import { subscriptionApi } from '@/api/subscription';
 import { useAuth } from '@/auth/AuthContext';
-import { Avatar } from '@/components/avatar';
 import { CategoryBox } from '@/components/category-box';
-import { FavoriteMovieRow } from '@/components/favorite-movie-row';
+import { ProfileCard } from '@/components/profile-card';
+import { ScreenHeader } from '@/components/screen-header';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AccentColor, Spacing } from '@/constants/theme';
@@ -23,6 +24,16 @@ export default function ProfileScreen() {
   const [error, setError] = useState<string | null>(null);
   const [isSavingAvatar, setIsSavingAvatar] = useState(false);
   const [avatarError, setAvatarError] = useState<string | null>(null);
+  // Only drives the PREMIUM badge — fetched separately and best-effort, so a failure here
+  // never blocks the profile itself (no badge is the safe fallback).
+  const [isPremium, setIsPremium] = useState(false);
+
+  useEffect(() => {
+    subscriptionApi
+      .get()
+      .then((status) => setIsPremium(status.isPremium))
+      .catch((err) => console.error('Load subscription status failed:', err));
+  }, []);
 
   const load = useCallback(async () => {
     setIsLoading(true);
@@ -109,45 +120,44 @@ export default function ProfileScreen() {
   // in-app navigation and isn't worth carrying as defensive code.
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <View style={styles.header}>
-        <ThemedText type="title" style={styles.title}>
-          My Profile
-        </ThemedText>
-        <Pressable onPress={() => router.push('/settings')}>
-          <ThemedText type="linkPrimary">Settings</ThemedText>
-        </Pressable>
-      </View>
+    <ThemedView style={styles.screen}>
+      <ScreenHeader
+        title="My Profile"
+        style={styles.headerBar}
+        right={
+          <Pressable onPress={() => router.push('/settings')}>
+            <ThemedText type="linkPrimary">Settings</ThemedText>
+          </Pressable>
+        }
+      />
+      <ScrollView contentContainerStyle={styles.container}>
+      <ProfileCard
+        avatarUrl={profile.avatarUrl}
+        displayName={user?.displayName ?? '?'}
+        username={user?.username ?? ''}
+        stat={{ value: String(profile.watchedCount), label: 'Films watched' }}
+        favoritesLabel="My favorites"
+        favorites={profile.favoriteMovies}
+        favoritesAction={{ label: 'Edit', onPress: () => router.push('/favorites') }}
+        genres={profile.genreProfile.slice(0, 3).map((g) => g.genre)}
+        badge={isPremium ? 'PREMIUM' : undefined}
+        onPhotoPress={isSavingAvatar ? undefined : onAvatarPress}
+      />
 
-      <View style={styles.avatarSection}>
-        <Avatar
-          avatarUrl={profile.avatarUrl}
-          displayName={user?.displayName ?? '?'}
-          onPress={isSavingAvatar ? undefined : onAvatarPress}
-          style={styles.avatar}
-        />
-        {isSavingAvatar ? (
-          <ActivityIndicator color={theme.text} />
-        ) : (
-          profile.avatarUrl && (
-            <Pressable onPress={onRemoveAvatar}>
-              <ThemedText type="linkPrimary">Remove photo</ThemedText>
-            </Pressable>
-          )
-        )}
-        {avatarError ? <ThemedText style={styles.error}>{avatarError}</ThemedText> : null}
-      </View>
-
-      <ThemedView type="backgroundElement" style={styles.card}>
-        <ThemedText type="smallBold" style={styles.cardTitle}>
-          Favorites
-        </ThemedText>
-        {profile.favoriteMovies.length === 0 ? (
-          <ThemedText themeColor="textSecondary">You haven&apos;t picked any favorites yet.</ThemedText>
-        ) : (
-          profile.favoriteMovies.map((favorite) => <FavoriteMovieRow key={favorite.movieId} favorite={favorite} />)
-        )}
-      </ThemedView>
+      {(isSavingAvatar || profile.avatarUrl || avatarError) && (
+        <View style={styles.avatarSection}>
+          {isSavingAvatar ? (
+            <ActivityIndicator color={theme.text} />
+          ) : (
+            profile.avatarUrl && (
+              <Pressable onPress={onRemoveAvatar}>
+                <ThemedText type="linkPrimary">Remove photo</ThemedText>
+              </Pressable>
+            )
+          )}
+          {avatarError ? <ThemedText style={styles.error}>{avatarError}</ThemedText> : null}
+        </View>
+      )}
 
       <CategoryBox
         title="Watched"
@@ -193,7 +203,8 @@ export default function ProfileScreen() {
           </View>
         ))}
       </ThemedView>
-    </ScrollView>
+      </ScrollView>
+    </ThemedView>
   );
 }
 
@@ -207,12 +218,11 @@ function StatRow({ label, value }: { label: string; value: number }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flexGrow: 1, padding: Spacing.four, gap: Spacing.three, paddingBottom: Spacing.six },
+  screen: { flex: 1 },
+  headerBar: { paddingHorizontal: Spacing.four },
+  container: { flexGrow: 1, paddingHorizontal: Spacing.four, gap: Spacing.three, paddingBottom: Spacing.six },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: Spacing.four, gap: Spacing.three },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  title: { textAlign: 'center' },
   avatarSection: { alignItems: 'center', gap: Spacing.two },
-  avatar: {},
   error: { color: '#d33', textAlign: 'center' },
   card: { borderRadius: Spacing.two, padding: Spacing.three, gap: Spacing.two },
   cardTitle: { marginBottom: Spacing.one },

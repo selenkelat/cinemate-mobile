@@ -7,6 +7,7 @@ import { favoritesApi } from '@/api/favorites';
 import { moviesApi, type WatchedMovieDto } from '@/api/movies';
 import { profileApi } from '@/api/profile';
 import { useAuth } from '@/auth/AuthContext';
+import { ScreenHeader } from '@/components/screen-header';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AccentColor, Spacing } from '@/constants/theme';
@@ -102,9 +103,7 @@ export default function FavoritesScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <ThemedText type="title" style={styles.title}>
-        Choose favorites
-      </ThemedText>
+      <ScreenHeader title="Choose favorites" showBack />
       <ThemedText themeColor="textSecondary" style={styles.hint}>
         Pick up to {MAX_FAVORITES} from your watched films. Uploading a new export resets this.
       </ThemedText>
@@ -161,10 +160,9 @@ export default function FavoritesScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: Spacing.four, gap: Spacing.two },
+  container: { flex: 1, paddingHorizontal: Spacing.four, paddingBottom: Spacing.four, gap: Spacing.two },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: Spacing.four, gap: Spacing.three },
-  title: { textAlign: 'center' },
-  hint: { textAlign: 'center', marginBottom: Spacing.one },
+  hint: { marginBottom: Spacing.one },
   error: { color: '#d33', textAlign: 'center' },
   input: { borderRadius: Spacing.two, padding: Spacing.three, fontSize: 16 },
   counter: { textAlign: 'center' },

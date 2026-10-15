@@ -1,13 +1,12 @@
-import { Image } from 'expo-image';
 import { router } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, View, type ViewToken } from 'react-native';
 
 import { ApiError } from '@/api/client';
 import { matchesApi, type CandidatesResult, type MatchCandidateDto } from '@/api/matches';
-import { Avatar } from '@/components/avatar';
 import { PremiumCta, showPremiumComingSoon } from '@/components/premium-cta';
+import { ProfileCard } from '@/components/profile-card';
+import { ScreenHeader } from '@/components/screen-header';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AccentColor, Spacing } from '@/constants/theme';
@@ -33,12 +32,15 @@ export default function MatchesScreen() {
   // Screen state only: survives tab switches (tab screens stay mounted), resets to 50 when the
   // app restarts — persisting it isn't worth a new storage dependency.
   const [minScore, setMinScore] = useState(DEFAULT_MIN_SCORE);
+  // Index of the card currently on screen, for the "2 of 5 today" counter; null on the end card.
+  const [visibleIndex, setVisibleIndex] = useState<number | null>(0);
 
   const load = useCallback(async (score: number) => {
     setIsLoading(true);
     setError(null);
     try {
       setResult(await matchesApi.getCandidates(score > DEFAULT_MIN_SCORE ? score : undefined));
+      setVisibleIndex(0);
     } catch (err) {
       // A filtered request 403s if Premium lapsed mid-session — drop back to the default
       // list (this setter re-triggers the load effect) rather than leaving the user stuck.
@@ -71,36 +73,73 @@ export default function MatchesScreen() {
   // Shown whenever premium status is known — including while a new filter loads and when the
   // filter leaves nobody, so the user can always step back down.
   const showFilter = result !== null && result.isPremium !== null;
+  const count = result && !isLoading ? result.candidates.length : 0;
+  const counter =
+    count > 0 && visibleIndex !== null
+      ? `${visibleIndex + 1} of ${count}${result?.isPremium === false ? ' today' : ''}`
+      : null;
 
   return (
-    <View style={styles.screen}>
+    <ThemedView style={styles.screen}>
+      <ScreenHeader
+        title="Matches"
+        style={styles.header}
+        right={
+          counter && (
+            <ThemedText type="small" themeColor="textSecondary">
+              {counter}
+            </ThemedText>
+          )
+        }
+      />
       {showFilter && (
         <FilterRow selected={minScore} isPremium={result.isPremium === true} onSelect={setMinScore} />
       )}
       <View style={styles.deckContainer} onLayout={(e) => setContainerHeight(e.nativeEvent.layout.height)}>
         {result === null || isLoading ? (
-          <ThemedView style={styles.centered}>
+          <View style={styles.centered}>
             <ActivityIndicator color={theme.text} />
-          </ThemedView>
+          </View>
         ) : result.candidates.length === 0 ? (
-          <ThemedView style={styles.centered}>
+          <View style={styles.centered}>
             <ThemedText themeColor="textSecondary" style={styles.hint}>
               {minScore > DEFAULT_MIN_SCORE
                 ? `No matches at ${minScore}%+ yet. Try a lower filter.`
                 : 'No matches meet the chat threshold yet.'}
             </ThemedText>
-          </ThemedView>
+          </View>
         ) : (
-          containerHeight > 0 && <Deck result={result} height={containerHeight} deckKey={minScore} />
+          containerHeight > 0 && (
+            <Deck result={result} height={containerHeight} deckKey={minScore} onVisibleIndexChange={setVisibleIndex} />
+          )
         )}
       </View>
-    </View>
+    </ThemedView>
   );
 }
 
-function Deck({ result, height, deckKey }: { result: CandidatesResult; height: number; deckKey: number }) {
+function Deck({
+  result,
+  height,
+  deckKey,
+  onVisibleIndexChange,
+}: {
+  result: CandidatesResult;
+  height: number;
+  deckKey: number;
+  onVisibleIndexChange: (index: number | null) => void;
+}) {
   const { candidates, isPremium, totalCount } = result;
   const deckData: DeckItem[] = [...candidates.map((candidate) => ({ type: 'candidate' as const, candidate })), { type: 'end' as const }];
+
+  // FlatList requires these two to keep the same identity across renders (it throws if
+  // onViewableItemsChanged changes), hence refs rather than inline values.
+  const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: ViewToken<DeckItem>[] }) => {
+    const first = viewableItems[0];
+    if (!first) return;
+    onVisibleIndexChange(first.item.type === 'candidate' ? first.index : null);
+  }).current;
+  const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 60 }).current;
 
   return (
     // Keyed by the active filter so changing it starts the deck back at the first card.
@@ -113,6 +152,8 @@ function Deck({ result, height, deckKey }: { result: CandidatesResult; height: n
       decelerationRate="fast"
       snapToInterval={height}
       getItemLayout={(_, index) => ({ length: height, offset: height * index, index })}
+      onViewableItemsChanged={onViewableItemsChanged}
+      viewabilityConfig={viewabilityConfig}
       renderItem={({ item }) =>
         item.type === 'candidate' ? (
           <CandidateCard candidate={item.candidate} height={height} />
@@ -134,11 +175,9 @@ function FilterRow({
   onSelect: (score: number) => void;
 }) {
   const theme = useTheme();
-  // Tab screens have no header, so without the inset the row sits under the status bar/notch.
-  const insets = useSafeAreaInsets();
 
   return (
-    <View style={[styles.filterRow, { paddingTop: insets.top + Spacing.two }]}>
+    <View style={styles.filterRow}>
       <ThemedText type="small" themeColor="textSecondary">
         Min match
       </ThemedText>
@@ -171,67 +210,26 @@ function FilterRow({
 }
 
 function CandidateCard({ candidate, height }: { candidate: MatchCandidateDto; height: number }) {
-  const theme = useTheme();
-
-  const onMessage = () => {
+  const openProfile = () => router.push({ pathname: '/match/[userId]', params: { userId: String(candidate.userId) } });
+  const openChat = () =>
     router.push({ pathname: '/chat/[otherUserId]', params: { otherUserId: String(candidate.userId) } });
-  };
 
   return (
-    <Pressable
-      style={[styles.card, { height }]}
-      onPress={() => router.push({ pathname: '/match/[userId]', params: { userId: String(candidate.userId) } })}>
-      <Avatar avatarUrl={candidate.avatarUrl} displayName={candidate.displayName} style={styles.avatar} />
-
-      <ThemedText type="subtitle" style={styles.name}>
-        {candidate.displayName}
-      </ThemedText>
-      <ThemedText themeColor="textSecondary" style={styles.username}>
-        @{candidate.username}
-      </ThemedText>
-
-      <ThemedText type="title" style={styles.score}>
-        {Math.round(candidate.overallScore)}%
-      </ThemedText>
-
-      {candidate.favoriteMovies.length > 0 && (
-        <ThemedView type="backgroundElement" style={styles.favoritesCard}>
-          <ThemedText type="smallBold" style={styles.favoritesTitle}>
-            Favorites
-          </ThemedText>
-          <View style={styles.posterRow}>
-            {candidate.favoriteMovies.map((favorite) =>
-              favorite.posterUrl ? (
-                <Image key={favorite.movieId} source={{ uri: favorite.posterUrl }} style={styles.poster} contentFit="cover" />
-              ) : (
-                <View
-                  key={favorite.movieId}
-                  style={[styles.poster, { backgroundColor: theme.backgroundSelected }]}
-                />
-              ),
-            )}
-          </View>
-        </ThemedView>
-      )}
-
-      <ThemedText themeColor="textSecondary" style={styles.overlapText}>
-        {candidate.watchedOverlapCount} films in common
-      </ThemedText>
-
-      {candidate.topGenres.length > 0 && (
-        <View style={styles.chipRow}>
-          {candidate.topGenres.map((genre) => (
-            <View key={genre} style={[styles.chip, { backgroundColor: theme.backgroundElement }]}>
-              <ThemedText type="small">{genre}</ThemedText>
-            </View>
-          ))}
-        </View>
-      )}
-
-      <Pressable style={styles.messageButton} onPress={onMessage}>
-        <ThemedText style={styles.messageButtonText}>Message</ThemedText>
-      </Pressable>
-    </Pressable>
+    <View style={[styles.page, { height }]}>
+      <ProfileCard
+        fill
+        avatarUrl={candidate.avatarUrl}
+        displayName={candidate.displayName}
+        username={candidate.username}
+        stat={{ value: `${Math.round(candidate.overallScore)}%`, label: 'Taste match' }}
+        favoritesLabel="Their favorites"
+        favorites={candidate.favoriteMovies}
+        commonCount={candidate.watchedOverlapCount}
+        genres={candidate.topGenres}
+        action={{ label: 'Message', onPress: openChat }}
+        onPress={openProfile}
+      />
+    </View>
   );
 }
 
@@ -254,41 +252,41 @@ function EndCard({
 
   if (!isCapped) {
     return (
-      <ThemedView style={[styles.card, { height }]}>
-        <ThemedText type="subtitle" style={styles.name}>
+      <View style={[styles.endCard, { height }]}>
+        <ThemedText type="subtitle" style={styles.endTitle}>
           You&apos;ve seen everyone
         </ThemedText>
         <ThemedText themeColor="textSecondary" style={styles.hint}>
           Check back later for new matches.
         </ThemedText>
-      </ThemedView>
+      </View>
     );
   }
 
   return (
-    <ThemedView style={[styles.card, { height }]}>
-      <ThemedText type="subtitle" style={styles.name}>
+    <View style={[styles.endCard, { height }]}>
+      <ThemedText type="subtitle" style={styles.endTitle}>
         That&apos;s today&apos;s {shown} of {total}
       </ThemedText>
       <ThemedText themeColor="textSecondary" style={styles.hint}>
         New free picks every day.
       </ThemedText>
       <PremiumCta description={`See all ${total} of your matches, every day.`} />
-    </ThemedView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
+  header: { paddingHorizontal: Spacing.four },
   deckContainer: { flex: 1 },
   filterRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     alignItems: 'center',
-    justifyContent: 'center',
     gap: Spacing.one,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
+    paddingHorizontal: Spacing.four,
+    paddingBottom: Spacing.two,
   },
   filterChip: { borderRadius: Spacing.four, paddingHorizontal: Spacing.two, paddingVertical: Spacing.half },
   filterChipTextSelected: { color: '#fff' },
@@ -296,31 +294,9 @@ const styles = StyleSheet.create({
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: Spacing.four, gap: Spacing.three },
   hint: { textAlign: 'center' },
   error: { color: '#d33', textAlign: 'center' },
-  card: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: Spacing.five,
-    gap: Spacing.two,
-  },
-  avatar: { marginBottom: Spacing.two },
-  name: { textAlign: 'center' },
-  username: { textAlign: 'center', marginTop: -Spacing.one },
-  score: { color: AccentColor, marginTop: Spacing.three },
-  favoritesCard: { borderRadius: Spacing.two, padding: Spacing.three, marginTop: Spacing.two, alignItems: 'center' },
-  favoritesTitle: { marginBottom: Spacing.two },
-  posterRow: { flexDirection: 'row', gap: Spacing.two },
-  poster: { width: 40, height: 60, borderRadius: Spacing.half },
-  overlapText: { marginTop: Spacing.one },
-  chipRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: Spacing.one, marginTop: Spacing.one },
-  chip: { borderRadius: Spacing.four, paddingHorizontal: Spacing.two, paddingVertical: Spacing.half },
-  messageButton: {
-    marginTop: Spacing.four,
-    backgroundColor: AccentColor,
-    borderRadius: Spacing.two,
-    paddingHorizontal: Spacing.five,
-    paddingVertical: Spacing.three,
-  },
-  messageButtonText: { color: '#fff', fontWeight: '600' },
+  page: { paddingHorizontal: Spacing.three, paddingVertical: Spacing.two },
+  endCard: { justifyContent: 'center', alignItems: 'center', padding: Spacing.five, gap: Spacing.two },
+  endTitle: { textAlign: 'center' },
   button: {
     backgroundColor: AccentColor,
     borderRadius: Spacing.two,

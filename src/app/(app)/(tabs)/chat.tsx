@@ -5,6 +5,8 @@ import { ActivityIndicator, FlatList, Pressable, StyleSheet, View } from 'react-
 import { ApiError } from '@/api/client';
 import { chatApi, type ConversationSummaryDto } from '@/api/chat';
 import { useUnread } from '@/chat/UnreadContext';
+import { Avatar } from '@/components/avatar';
+import { ScreenHeader } from '@/components/screen-header';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AccentColor, Spacing } from '@/constants/theme';
@@ -61,9 +63,7 @@ export default function ChatInboxScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <ThemedText type="title" style={styles.title}>
-        Chat
-      </ThemedText>
+      <ScreenHeader title="Chat" />
 
       <FlatList
         data={conversations}
@@ -75,6 +75,7 @@ export default function ChatInboxScreen() {
             onPress={() =>
               router.push({ pathname: '/chat/[otherUserId]', params: { otherUserId: String(item.otherUserId) } })
             }>
+            <Avatar avatarUrl={item.otherAvatarUrl} displayName={item.otherDisplayName} size={48} />
             <View style={styles.rowInfo}>
               <ThemedText type="smallBold">{item.otherDisplayName}</ThemedText>
               <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
@@ -102,9 +103,8 @@ export default function ChatInboxScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: Spacing.four, gap: Spacing.three },
+  container: { flex: 1, paddingHorizontal: Spacing.four, gap: Spacing.two },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: Spacing.four, gap: Spacing.three },
-  title: { textAlign: 'center' },
   hint: { textAlign: 'center' },
   error: { color: '#d33', textAlign: 'center' },
   listContent: { paddingBottom: Spacing.six },
@@ -112,6 +112,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    gap: Spacing.three,
     borderRadius: Spacing.two,
     padding: Spacing.three,
   },

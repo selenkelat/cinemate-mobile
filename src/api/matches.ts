@@ -48,6 +48,7 @@ export interface MatchResultDto {
   likedOverlap: MovieOverlapDto;
   ratingCorrelation: number | null;
   sharedRatedCount: number;
+  otherTopGenres: string[];
 }
 
 // Mirrors Cinemate.Models.Dto.WatchRecommendationsDto field-for-field. Premium-only (403 for a

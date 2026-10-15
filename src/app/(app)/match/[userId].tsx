@@ -4,22 +4,24 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'reac
 
 import { ApiError } from '@/api/client';
 import { matchesApi, type MatchResultDto, type WatchRecommendationsDto } from '@/api/matches';
-import { Avatar } from '@/components/avatar';
 import { CategoryBox } from '@/components/category-box';
-import { FavoriteMovieRow } from '@/components/favorite-movie-row';
 import { PremiumCta, showPremiumComingSoon } from '@/components/premium-cta';
+import { ProfileCard } from '@/components/profile-card';
+import { ScreenHeader } from '@/components/screen-header';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AccentColor, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 export default function MatchDetailScreen() {
-  const { userId } = useLocalSearchParams<{ userId: string }>();
+  // from=chat: opened from that person's chat strip (see onMessage below).
+  const { userId, from } = useLocalSearchParams<{ userId: string; from?: string }>();
   const theme = useTheme();
   const [match, setMatch] = useState<MatchResultDto | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  // 403 = outside the caller's free-tier picks for today. Retrying can't change that, so it gets
+  // 403 = a free caller who was never shown this person in a daily pick and has no chat with them
+  // (previously shown people and chat partners stay open). Retrying can't change that, so it gets
   // its own state with a Back button instead of the generic error + "Try again".
   const [isLocked, setIsLocked] = useState(false);
 
@@ -90,7 +92,8 @@ export default function MatchDetailScreen() {
           Premium match
         </ThemedText>
         <ThemedText themeColor="textSecondary" style={styles.lockedText}>
-          This match isn&apos;t in today&apos;s free picks.
+          {/* Anyone from an earlier day's picks, or a chat partner, stays open — so only never-shown people land here. */}
+          You haven&apos;t been shown this match in your free picks yet.
         </ThemedText>
         <PremiumCta description="Unlock every match, every day." />
         <Pressable onPress={() => router.back()}>
@@ -115,36 +118,32 @@ export default function MatchDetailScreen() {
     router.push({ pathname: '/movie-list', params: { title, movies: JSON.stringify(movies) } });
   };
 
-  return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Avatar avatarUrl={match.avatarUrl} displayName={match.displayName} style={styles.avatar} />
-      <ThemedText type="subtitle" style={styles.name}>
-        {match.displayName}
-      </ThemedText>
-      <ThemedText themeColor="textSecondary" style={styles.username}>
-        @{match.username}
-      </ThemedText>
+  // Opened from that person's chat strip: going "to" the chat is just going back. Pushing a
+  // second chat screen would open a second socket, and the backend's one-connection-per-user
+  // rule would close the first one underneath it.
+  const onMessage = () =>
+    from === 'chat'
+      ? router.back()
+      : router.push({ pathname: '/chat/[otherUserId]', params: { otherUserId: String(match.user2Id) } });
 
-      <ThemedText type="title" style={styles.score}>
-        {Math.round(match.overallScore)}%
-      </ThemedText>
-      <ThemedText themeColor="textSecondary" style={styles.subtitle}>
-        overall match
-      </ThemedText>
+  return (
+    <ThemedView style={styles.screen}>
+      <ScreenHeader showBack style={styles.header} />
+      <ScrollView contentContainerStyle={styles.container}>
+      <ProfileCard
+        avatarUrl={match.avatarUrl}
+        displayName={match.displayName}
+        username={match.username}
+        stat={{ value: `${Math.round(match.overallScore)}%`, label: 'Taste match' }}
+        favoritesLabel="Their favorites"
+        favorites={match.otherFavoriteMovies}
+        commonCount={match.watchedOverlap.count}
+        genres={match.otherTopGenres ?? []}
+        action={{ label: 'Message', onPress: onMessage }}
+      />
 
       <ThemedView type="backgroundElement" style={styles.card}>
         <StatRow label="Genre similarity" value={`${match.genreSimilarity}%`} />
-      </ThemedView>
-
-      <ThemedView type="backgroundElement" style={styles.card}>
-        <ThemedText type="smallBold" style={styles.cardTitle}>
-          Favorites
-        </ThemedText>
-        {match.otherFavoriteMovies.length === 0 ? (
-          <ThemedText themeColor="textSecondary">{match.displayName} hasn&apos;t picked any favorites yet.</ThemedText>
-        ) : (
-          match.otherFavoriteMovies.map((favorite) => <FavoriteMovieRow key={favorite.movieId} favorite={favorite} />)
-        )}
       </ThemedView>
 
       <CategoryBox
@@ -184,15 +183,8 @@ export default function MatchDetailScreen() {
           )}
         </>
       )}
-
-      <Pressable
-        style={styles.button}
-        onPress={() =>
-          router.push({ pathname: '/chat/[otherUserId]', params: { otherUserId: String(match.user2Id) } })
-        }>
-        <ThemedText style={styles.buttonText}>Message</ThemedText>
-      </Pressable>
-    </ScrollView>
+      </ScrollView>
+    </ThemedView>
   );
 }
 
@@ -206,17 +198,14 @@ function StatRow({ label, value }: { label: string; value: string }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flexGrow: 1, padding: Spacing.four, gap: Spacing.three, paddingBottom: Spacing.six },
+  screen: { flex: 1 },
+  header: { paddingHorizontal: Spacing.four },
+  container: { flexGrow: 1, paddingHorizontal: Spacing.four, gap: Spacing.three, paddingBottom: Spacing.six },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: Spacing.four, gap: Spacing.three },
-  avatar: { alignSelf: 'center', marginBottom: Spacing.two },
   name: { textAlign: 'center' },
-  username: { textAlign: 'center', marginTop: -Spacing.one },
-  score: { textAlign: 'center', marginTop: Spacing.four },
-  subtitle: { textAlign: 'center', marginTop: -Spacing.two },
   error: { color: '#d33', textAlign: 'center' },
   lockedText: { textAlign: 'center' },
   card: { borderRadius: Spacing.two, padding: Spacing.three, gap: Spacing.two },
-  cardTitle: { marginBottom: Spacing.one },
   sectionTitle: { marginTop: Spacing.two, marginBottom: -Spacing.one },
   statRow: { flexDirection: 'row', justifyContent: 'space-between' },
   button: {

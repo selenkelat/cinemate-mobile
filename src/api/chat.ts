@@ -12,6 +12,7 @@ export interface ConversationSummaryDto {
   blockedByMe: boolean;
   unreadCount: number;
   otherLastReadMessageId: number | null;
+  otherAvatarUrl: string | null;
 }
 
 // Mirrors Cinemate.Models.Dto.MessageDto field-for-field. Also the shape of every WebSocket
