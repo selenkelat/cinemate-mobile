@@ -79,6 +79,14 @@ links).
 wrapper over `apiRequest<T>()` with TypeScript types mirroring the backend's `Models/Dto` records
 1:1. `matches.ts`/`movies.ts`/`profile.ts` DTOs carry poster/avatar URLs as already-full delivery
 URLs (TMDB CDN or Cloudinary) — the client never constructs an image URL itself.
+`apiRequestWithHeaders<T>` is the same request path (shared token/401-retry/error handling) but
+also returns the response `Headers` — used only by `matchesApi.getCandidates`, which reads the
+backend's `X-Is-Premium`/`X-Total-Candidates` (free-tier discovery cap; the body stays a bare
+array so older builds don't break). A `403` from `GET /api/match/{id}` means "outside today's
+free picks" — `match/[userId].tsx` shows a dedicated locked state for it, not a retryable error.
+Both that locked state and the Matches deck's end card use `src/components/premium-cta.tsx` for
+the upsell; its button shows a "coming soon" alert until the Phase 2 RevenueCat paywall exists —
+that `onPress` is the one place to wire paywall navigation in.
 
 ## Known platform gotchas (already hit, don't re-debug)
 
