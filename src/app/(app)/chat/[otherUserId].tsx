@@ -1,6 +1,7 @@
-import { useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, KeyboardAvoidingView, Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { chatApi, type ConversationSummaryDto, type MessageDto } from '@/api/chat';
 import { ApiError } from '@/api/client';
@@ -19,6 +20,7 @@ type LoadState = 'loading' | 'error' | 'ready';
 export default function ConversationScreen() {
   const { otherUserId: otherUserIdParam } = useLocalSearchParams<{ otherUserId: string }>();
   const otherUserId = Number(otherUserIdParam);
+  const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const theme = useTheme();
   const { refreshUnread } = useUnread();
@@ -160,11 +162,26 @@ export default function ConversationScreen() {
       style={styles.flex}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={Spacing.six}>
-      <ThemedView style={styles.container}>
+      {/* No navigation header, so the inset keeps the List/Block links out from under the
+          status bar/notch where they couldn't be tapped. */}
+      <ThemedView style={[styles.container, { paddingTop: insets.top + Spacing.two }]}>
         <View style={styles.header}>
           <ThemedText type="smallBold" numberOfLines={1} style={styles.headerTitle}>
             {summary?.otherDisplayName ?? `User ${otherUserId}`}
           </ThemedText>
+          {/* Shared lists hang off an existing conversation — none to open before the first one. */}
+          {summary !== null && (
+            <Pressable
+              style={styles.headerLink}
+              onPress={() =>
+                router.push({
+                  pathname: '/shared-list/[otherUserId]',
+                  params: { otherUserId: String(otherUserId), name: summary.otherDisplayName },
+                })
+              }>
+              <ThemedText type="linkPrimary">List</ThemedText>
+            </Pressable>
+          )}
           {isBlocked && blockedByMe ? (
             <Pressable onPress={onUnblock} disabled={isUnblocking}>
               <ThemedText type="linkPrimary">{isUnblocking ? 'Unblocking…' : 'Unblock'}</ThemedText>
@@ -250,7 +267,7 @@ function MessageBubble({ message, isMine }: { message: MessageDto; isMine: boole
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  container: { flex: 1, paddingTop: Spacing.four },
+  container: { flex: 1 },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: Spacing.four, gap: Spacing.three },
   error: { color: '#d33', textAlign: 'center' },
   hint: { textAlign: 'center', padding: Spacing.four },
@@ -262,6 +279,7 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.three,
   },
   headerTitle: { flex: 1, marginRight: Spacing.two },
+  headerLink: { marginRight: Spacing.three },
   list: { flex: 1 },
   listContent: { padding: Spacing.four, gap: Spacing.two },
   olderSpinner: { marginVertical: Spacing.three },
