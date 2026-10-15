@@ -86,7 +86,17 @@ array so older builds don't break). A `403` from `GET /api/match/{id}` means "ou
 free picks" — `match/[userId].tsx` shows a dedicated locked state for it, not a retryable error.
 Both that locked state and the Matches deck's end card use `src/components/premium-cta.tsx` for
 the upsell; its button shows a "coming soon" alert until the Phase 2 RevenueCat paywall exists —
-that `onPress` is the one place to wire paywall navigation in.
+the exported `showPremiumComingSoon()` is the one place to wire paywall navigation in (also used
+by the locked match-% filter chips below).
+
+The Matches tab has a Premium "Min match" chip row (50/60/70/80/90%) above the deck, sent as
+`getCandidates(minScore)` → `?minScore=`; 50 means "no filter" and sends no param (it mirrors the
+backend's default `Chat:MinChatScore`, below which the backend 400s). Free users see the chips
+dimmed with a "Premium" tag (tap → the coming-soon alert; the backend 403s a free `minScore`);
+the row is hidden when `X-Is-Premium` is missing. The row also stays visible on the empty state,
+so a premium user at 90% can always step back down, and a 403 on a filtered request (Premium
+lapsed mid-session) resets the filter to 50. The selection is screen state only — kept across tab
+switches, reset on app restart (no persistent storage dependency for this).
 
 ## Known platform gotchas (already hit, don't re-debug)
 
