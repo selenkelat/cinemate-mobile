@@ -7,6 +7,7 @@ import { matchesApi, type MatchResultDto } from '@/api/matches';
 import { Avatar } from '@/components/avatar';
 import { CategoryBox } from '@/components/category-box';
 import { FavoriteMovieRow } from '@/components/favorite-movie-row';
+import { PremiumCta } from '@/components/premium-cta';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AccentColor, Spacing } from '@/constants/theme';
@@ -18,14 +19,22 @@ export default function MatchDetailScreen() {
   const [match, setMatch] = useState<MatchResultDto | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // 403 = outside the caller's free-tier picks for today. Retrying can't change that, so it gets
+  // its own state with a Back button instead of the generic error + "Try again".
+  const [isLocked, setIsLocked] = useState(false);
 
   const load = useCallback(async () => {
     setIsLoading(true);
     setError(null);
+    setIsLocked(false);
     try {
       const result = await matchesApi.get(Number(userId));
       setMatch(result);
     } catch (err) {
+      if (err instanceof ApiError && err.status === 403) {
+        setIsLocked(true);
+        return;
+      }
       console.error('Load match detail failed:', err);
       setError(err instanceof ApiError ? err.message : "Couldn't reach the server. Check your connection and try again.");
     } finally {
@@ -41,6 +50,25 @@ export default function MatchDetailScreen() {
     return (
       <ThemedView style={styles.centered}>
         <ActivityIndicator color={theme.text} />
+      </ThemedView>
+    );
+  }
+
+  // Deliberately no "Message" button here: the backend doesn't yet stop a free user from opening
+  // a new chat by id, and offering it from this screen would just route around the paywall.
+  if (isLocked) {
+    return (
+      <ThemedView style={styles.centered}>
+        <ThemedText type="subtitle" style={styles.name}>
+          Premium match
+        </ThemedText>
+        <ThemedText themeColor="textSecondary" style={styles.lockedText}>
+          This match isn&apos;t in today&apos;s free picks.
+        </ThemedText>
+        <PremiumCta description="Unlock every match, every day." />
+        <Pressable onPress={() => router.back()}>
+          <ThemedText type="linkPrimary">Back</ThemedText>
+        </Pressable>
       </ThemedView>
     );
   }
@@ -132,6 +160,7 @@ const styles = StyleSheet.create({
   score: { textAlign: 'center', marginTop: Spacing.four },
   subtitle: { textAlign: 'center', marginTop: -Spacing.two },
   error: { color: '#d33', textAlign: 'center' },
+  lockedText: { textAlign: 'center' },
   card: { borderRadius: Spacing.two, padding: Spacing.three, gap: Spacing.two },
   cardTitle: { marginBottom: Spacing.one },
   statRow: { flexDirection: 'row', justifyContent: 'space-between' },

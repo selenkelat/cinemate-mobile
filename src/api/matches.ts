@@ -1,4 +1,4 @@
-import { apiRequest } from '@/api/client';
+import { apiRequest, apiRequestWithHeaders } from '@/api/client';
 import type { FavoriteMovieDto } from '@/api/profile';
 
 // Mirrors Cinemate.Models.Dto.CandidateFavoriteMovieDto field-for-field.
@@ -50,7 +50,35 @@ export interface MatchResultDto {
   sharedRatedCount: number;
 }
 
+// The body stays a bare MatchCandidateDto[] (backend MatchController keeps it that way so older
+// app builds don't break); premium status and the full pre-cap count ride on response headers.
+// Both are null if the header is missing or malformed — callers then just skip any upsell UI.
+export interface CandidatesResult {
+  candidates: MatchCandidateDto[];
+  isPremium: boolean | null;
+  totalCount: number | null;
+}
+
+function parseIsPremium(value: string | null): boolean | null {
+  if (value === 'true') return true;
+  if (value === 'false') return false;
+  return null;
+}
+
+function parseCount(value: string | null): number | null {
+  if (value === null) return null;
+  const n = Number(value);
+  return Number.isInteger(n) && n >= 0 ? n : null;
+}
+
 export const matchesApi = {
-  getCandidates: () => apiRequest<MatchCandidateDto[]>('/api/match/candidates', { auth: true }),
+  getCandidates: async (): Promise<CandidatesResult> => {
+    const { data, headers } = await apiRequestWithHeaders<MatchCandidateDto[]>('/api/match/candidates', { auth: true });
+    return {
+      candidates: data,
+      isPremium: parseIsPremium(headers.get('X-Is-Premium')),
+      totalCount: parseCount(headers.get('X-Total-Candidates')),
+    };
+  },
   get: (otherUserId: number) => apiRequest<MatchResultDto>(`/api/match/${otherUserId}`, { auth: true }),
 };

@@ -4,8 +4,9 @@ import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, View } from 'react-native';
 
 import { ApiError } from '@/api/client';
-import { matchesApi, type MatchCandidateDto } from '@/api/matches';
+import { matchesApi, type CandidatesResult, type MatchCandidateDto } from '@/api/matches';
 import { Avatar } from '@/components/avatar';
+import { PremiumCta } from '@/components/premium-cta';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AccentColor, Spacing } from '@/constants/theme';
@@ -18,15 +19,14 @@ type DeckItem = { type: 'candidate'; candidate: MatchCandidateDto } | { type: 'e
 
 export default function MatchesScreen() {
   const theme = useTheme();
-  const [candidates, setCandidates] = useState<MatchCandidateDto[] | null>(null);
+  const [result, setResult] = useState<CandidatesResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [containerHeight, setContainerHeight] = useState(0);
 
   const load = useCallback(async () => {
     setError(null);
     try {
-      const result = await matchesApi.getCandidates();
-      setCandidates(result);
+      setResult(await matchesApi.getCandidates());
     } catch (err) {
       console.error('Load candidates failed:', err);
       setError(err instanceof ApiError ? err.message : "Couldn't reach the server. Check your connection and try again.");
@@ -48,13 +48,15 @@ export default function MatchesScreen() {
     );
   }
 
-  if (candidates === null) {
+  if (result === null) {
     return (
       <ThemedView style={styles.centered}>
         <ActivityIndicator color={theme.text} />
       </ThemedView>
     );
   }
+
+  const { candidates, isPremium, totalCount } = result;
 
   if (candidates.length === 0) {
     return (
@@ -83,7 +85,12 @@ export default function MatchesScreen() {
             item.type === 'candidate' ? (
               <CandidateCard candidate={item.candidate} height={containerHeight} />
             ) : (
-              <EndCard height={containerHeight} />
+              <EndCard
+                height={containerHeight}
+                isPremium={isPremium}
+                shown={candidates.length}
+                total={totalCount}
+              />
             )
           }
         />
@@ -157,15 +164,45 @@ function CandidateCard({ candidate, height }: { candidate: MatchCandidateDto; he
   );
 }
 
-function EndCard({ height }: { height: number }) {
+function EndCard({
+  height,
+  isPremium,
+  shown,
+  total,
+}: {
+  height: number;
+  isPremium: boolean | null;
+  shown: number;
+  total: number | null;
+}) {
+  // Only when the backend explicitly says "free" and that more exist than were shown — a missing
+  // header (older backend) or a premium caller falls back to the original copy. "Every day"
+  // deliberately names no time — the backend's day boundary is UTC, i.e. 03:00 in Istanbul,
+  // not local midnight.
+  const isCapped = isPremium === false && total !== null && total > shown;
+
+  if (!isCapped) {
+    return (
+      <ThemedView style={[styles.card, { height }]}>
+        <ThemedText type="subtitle" style={styles.name}>
+          You&apos;ve seen everyone
+        </ThemedText>
+        <ThemedText themeColor="textSecondary" style={styles.hint}>
+          Check back later for new matches.
+        </ThemedText>
+      </ThemedView>
+    );
+  }
+
   return (
     <ThemedView style={[styles.card, { height }]}>
       <ThemedText type="subtitle" style={styles.name}>
-        You&apos;ve seen everyone
+        That&apos;s today&apos;s {shown} of {total}
       </ThemedText>
       <ThemedText themeColor="textSecondary" style={styles.hint}>
-        Check back later for new matches.
+        New free picks every day.
       </ThemedText>
+      <PremiumCta description={`See all ${total} of your matches, every day.`} />
     </ThemedView>
   );
 }

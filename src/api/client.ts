@@ -53,7 +53,9 @@ async function rawRequest(path: string, options: RequestOptions, token: string |
   });
 }
 
-export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
+// Shared by apiRequest and apiRequestWithHeaders so the token/retry/error handling lives in
+// exactly one place. Returns only a successful (2xx) response; anything else throws ApiError.
+async function sendRequest(path: string, options: RequestOptions): Promise<Response> {
   const token = options.auth ? (authHandlers?.getAccessToken() ?? null) : null;
   let response = await rawRequest(path, options, token);
 
@@ -82,9 +84,28 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
     throw new ApiError(response.status, message);
   }
 
+  return response;
+}
+
+async function parseBody<T>(response: Response): Promise<T> {
   if (response.status === 204) {
     return undefined as T;
   }
 
   return (await response.json()) as T;
+}
+
+export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
+  return parseBody<T>(await sendRequest(path, options));
+}
+
+// For the rare endpoint that carries information in response headers rather than the body
+// (e.g. GET /api/match/candidates' X-Is-Premium/X-Total-Candidates, kept out of the body so
+// the bare-array response shape didn't have to change).
+export async function apiRequestWithHeaders<T>(
+  path: string,
+  options: RequestOptions = {},
+): Promise<{ data: T; headers: Headers }> {
+  const response = await sendRequest(path, options);
+  return { data: await parseBody<T>(response), headers: response.headers };
 }
