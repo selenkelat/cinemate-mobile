@@ -89,16 +89,26 @@ it, not a retryable error.
 Both that locked state and the Matches deck's end card use `src/components/premium-cta.tsx` for
 the upsell; its button shows a "coming soon" alert until the Phase 2 RevenueCat paywall exists —
 the exported `showPremiumComingSoon()` is the one place to wire paywall navigation in (also used
-by the locked match-% filter chips below).
+by the locked match-% filter slider below).
 
-The Matches tab has a Premium "Min match" chip row (50/60/70/80/90%) above the deck, sent as
-`getCandidates(minScore)` → `?minScore=`; 50 means "no filter" and sends no param (it mirrors the
-backend's default `Chat:MinChatScore`, below which the backend 400s). Free users see the chips
+The Matches tab has a Premium "Min match" slider (65–95%, snaps to steps of 5, a hand-rolled `PanResponder` — no slider library; only the release reloads) above the deck, sent as
+`getCandidates(minScore)` → `?minScore=`; 65 means "no filter" and sends no param (it mirrors the
+backend's default `Chat:MinChatScore`, below which the backend 400s). Free users see the slider
 dimmed with a "Premium" tag (tap → the coming-soon alert; the backend 403s a free `minScore`);
 the row is hidden when `X-Is-Premium` is missing. The row also stays visible on the empty state,
 so a premium user at 90% can always step back down, and a 403 on a filtered request (Premium
-lapsed mid-session) resets the filter to 50. The selection is screen state only — kept across tab
+lapsed mid-session) resets the filter to 65. The selection is screen state only — kept across tab
 switches, reset on app restart (no persistent storage dependency for this).
+
+A **Deck · List** segment switch sits under the Matches header (screen state, like the filter —
+deliberately not a 4th tab). Deck is everything above; the filter row and "N of M today" counter
+show only there. List (`matchesApi.getPeople` → `GET /api/match/people`) is everyone whose
+profile you can open — free: today's picks + anyone shown before + chat partners; premium: everyone
++ chat partners — as rows (48 px avatar, name + small "PREMIUM" label, `@username`, green score %),
+tap → `/match/[id]`, reloaded on focus, "No matches yet." when empty. The backend makes this list
+exactly the set `GET /api/match/{id}` allows, so a row never opens to the locked screen.
+Premium status is public: deck cards and profile cards show a PREMIUM badge from
+`isPremium`/`otherIsPremium`.
 
 Match detail has a Premium "Watch next" section (`matchesApi.getRecommendations` →
 `GET /api/match/{id}/recommendations`): two `CategoryBox`es, "{name}'s picks for you" and "Your
@@ -106,10 +116,16 @@ picks for {name}", opening the same `movie-list` screen as the overlap boxes (li
 already ordered, highest-rated first; ratings themselves are never sent). It's fetched separately
 after the match loads, so it never delays the screen; a 403 (free caller) shows both boxes with
 `CategoryBox`'s `locked` prop ("Premium" label instead of a count, tap → `showPremiumComingSoon()`),
-any other failure just hides the section.
+any other failure just hides the section. The section's first box is **"Watch list together"**
+(`WatchListBox` in `match/[userId].tsx`), so free users can see the shared list exists: its state
+comes from the existing `sharedListApi.get` (re-fetched on focus) — 404 → locked "Chat first"
+(tap → an alert to start a chat), caller not premium → locked "Premium" (tap → coming-soon),
+only the other side not premium → locked but opens the list screen (which explains it), both
+premium → item count, always tappable even at 0; any other failure hides the box.
+`CategoryBox` gained two props for it: `lockedLabel` (default "Premium") and `alwaysTappable`.
 
 Shared watch list (`src/api/shared-list.ts`, `src/app/(app)/shared-list/[otherUserId].tsx`):
-opened from the chat header's "List" link, shown only once a conversation exists (the backend
+opened from the chat header's "List" link or the profile's "Watch list together" box, shown only once a conversation exists (the backend
 404s otherwise); the other person's display name rides along as a `name` route param. Open only
 while **both** sides are premium — GET always succeeds and its `callerIsPremium`/`otherIsPremium`
 flags pick the locked state (`PremiumCta` if you're not premium, "{name} needs Premium too."
@@ -139,7 +155,7 @@ name) opens `/match/[id]` with `from=chat`; that screen's "Message" then just go
 pushing a second chat screen — a second socket would be closed by the backend's
 one-connection-per-user rule. Tab icons use `expo-symbols` (`SymbolView`, SF Symbols on iOS,
 Material Symbols on Android — already a dependency). A `CategoryBox` with count 0 (and not
-`locked`) is dimmed and untappable.
+`locked` or `alwaysTappable`) is dimmed and untappable.
 
 ## Known platform gotchas (already hit, don't re-debug)
 
