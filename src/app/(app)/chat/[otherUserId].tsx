@@ -229,6 +229,12 @@ export default function ConversationScreen() {
           <ThemedText themeColor="textSecondary" style={styles.blockedNotice}>
             {blockedByMe ? 'You blocked this conversation.' : 'The other person has blocked this conversation.'}
           </ThemedText>
+        ) : wsStatus === 'closed' && closeReason === 'Conversation ended.' ? (
+          // The other person deleted their account — the conversation is gone server-side, so
+          // reconnecting would only 404.
+          <ThemedText themeColor="textSecondary" style={styles.blockedNotice}>
+            This conversation is no longer available.
+          </ThemedText>
         ) : wsStatus === 'closed' ? (
           <View style={styles.reconnectRow}>
             <ThemedText type="small" themeColor="textSecondary" style={styles.reconnectText}>

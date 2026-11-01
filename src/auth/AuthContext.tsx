@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type PropsWithChildren } from 'react';
 
+import { accountApi } from '@/api/account';
 import { authApi } from '@/api/auth';
 import { setAuthHandlers } from '@/api/client';
 import type { UserDto } from '@/api/types';
@@ -20,6 +21,9 @@ interface AuthContextValue {
   register: (username: string, password: string, displayName: string) => Promise<void>;
   login: (username: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  // Throws the ApiError on failure (403 = wrong password) so the screen can show it; on
+  // success signs out locally like logout.
+  deleteAccount: (password: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -88,10 +92,18 @@ export function AuthProvider({ children }: PropsWithChildren) {
     setUser(null);
   };
 
+  // No logout call afterwards: the backend deleted the refresh token along with the account.
+  const deleteAccount = async (password: string) => {
+    await accountApi.delete(password);
+    accessTokenRef.current = null;
+    await secureStorage.clearRefreshToken();
+    setUser(null);
+  };
+
   const getAccessToken = () => accessTokenRef.current;
 
   const value = useMemo(
-    () => ({ user, isLoading, getAccessToken, refreshAccessToken, register, login, logout }),
+    () => ({ user, isLoading, getAccessToken, refreshAccessToken, register, login, logout, deleteAccount }),
     [user, isLoading],
   );
 

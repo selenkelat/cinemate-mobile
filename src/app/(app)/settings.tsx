@@ -27,6 +27,13 @@ export default function SettingsScreen() {
           <ThemedText type="linkPrimary">Log out</ThemedText>
         </Pressable>
       </View>
+
+      {/* Apart from the other actions, at the very bottom, so it isn't tapped by accident. */}
+      <Pressable style={styles.deleteLink} onPress={() => router.push('/delete-account')}>
+        <ThemedText type="small" style={styles.deleteText}>
+          Delete account
+        </ThemedText>
+      </Pressable>
     </ThemedView>
   );
 }
@@ -43,4 +50,6 @@ const styles = StyleSheet.create({
   },
   secondaryButton: { padding: Spacing.two },
   buttonText: { color: '#fff', fontWeight: '600' },
+  deleteLink: { alignSelf: 'center', padding: Spacing.two, marginBottom: Spacing.six },
+  deleteText: { color: '#d33' },
 });
