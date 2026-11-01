@@ -1,9 +1,10 @@
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, View, type ViewToken } from 'react-native';
+import { ActivityIndicator, FlatList, PanResponder, Pressable, StyleSheet, View, type ViewToken } from 'react-native';
 
 import { ApiError } from '@/api/client';
 import { matchesApi, type CandidatesResult, type MatchCandidateDto } from '@/api/matches';
+import { Avatar } from '@/components/avatar';
 import { PremiumCta, showPremiumComingSoon } from '@/components/premium-cta';
 import { ProfileCard } from '@/components/profile-card';
 import { ScreenHeader } from '@/components/screen-header';
@@ -16,12 +17,16 @@ import { useTheme } from '@/hooks/use-theme';
 // the backend has no such concept (scores are computed automatically, not a mutual opt-in), so
 // swiping is pure navigation through an already-ranked list, nothing gets written anywhere.
 type DeckItem = { type: 'candidate'; candidate: MatchCandidateDto } | { type: 'end' };
+type ViewMode = 'deck' | 'list';
 
-// 50 mirrors the backend's default Chat:MinChatScore — the "no filter" choice, sent as no
-// minScore param at all. If that backend setting is ever raised, the lower chips here would
+// 65 mirrors the backend's default Chat:MinChatScore — the "no filter" choice, sent as no
+// minScore param at all. If that backend setting is ever raised, the slider's low end here would
 // start returning 400 and should be updated to match.
-const DEFAULT_MIN_SCORE = 50;
-const FILTER_OPTIONS = [50, 60, 70, 80, 90];
+const DEFAULT_MIN_SCORE = 65;
+const FILTER_MIN = DEFAULT_MIN_SCORE;
+const FILTER_MAX = 95;
+const FILTER_STEP = 5;
+const THUMB_SIZE = 20;
 
 export default function MatchesScreen() {
   const theme = useTheme();
@@ -32,8 +37,10 @@ export default function MatchesScreen() {
   // Screen state only: survives tab switches (tab screens stay mounted), resets to 50 when the
   // app restarts — persisting it isn't worth a new storage dependency.
   const [minScore, setMinScore] = useState(DEFAULT_MIN_SCORE);
-  // Index of the card currently on screen, for the "2 of 5 today" counter; null on the end card.
+  // Index of the card currently on screen, for the "2 of 10 today" counter; null on the end card.
   const [visibleIndex, setVisibleIndex] = useState<number | null>(0);
+  // Screen state only, like minScore — the deck keeps loading in the background either way.
+  const [mode, setMode] = useState<ViewMode>('deck');
 
   const load = useCallback(async (score: number) => {
     setIsLoading(true);
@@ -75,7 +82,7 @@ export default function MatchesScreen() {
   const showFilter = result !== null && result.isPremium !== null;
   const count = result && !isLoading ? result.candidates.length : 0;
   const counter =
-    count > 0 && visibleIndex !== null
+    mode === 'deck' && count > 0 && visibleIndex !== null
       ? `${visibleIndex + 1} of ${count}${result?.isPremium === false ? ' today' : ''}`
       : null;
 
@@ -92,6 +99,11 @@ export default function MatchesScreen() {
           )
         }
       />
+      <ModeSwitch mode={mode} onChange={setMode} />
+      {mode === 'list' ? (
+        <PeopleList />
+      ) : (
+        <>
       {showFilter && (
         <FilterRow selected={minScore} isPremium={result.isPremium === true} onSelect={setMinScore} />
       )}
@@ -114,7 +126,111 @@ export default function MatchesScreen() {
           )
         )}
       </View>
+        </>
+      )}
     </ThemedView>
+  );
+}
+
+function ModeSwitch({ mode, onChange }: { mode: ViewMode; onChange: (mode: ViewMode) => void }) {
+  const theme = useTheme();
+
+  return (
+    <View style={[styles.modeSwitch, { backgroundColor: theme.backgroundElement }]}>
+      {(['deck', 'list'] as const).map((option) => {
+        const isSelected = option === mode;
+        return (
+          <Pressable
+            key={option}
+            onPress={() => onChange(option)}
+            style={[styles.modeOption, isSelected && { backgroundColor: AccentColor }]}>
+            <ThemedText type="smallBold" style={isSelected ? styles.modeTextSelected : undefined}>
+              {option === 'deck' ? 'Deck' : 'List'}
+            </ThemedText>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
+// Everyone whose profile you can open (see matchesApi.getPeople) — reloaded on focus, so someone
+// you just started chatting with, or a new day's picks, show up without a manual refresh.
+function PeopleList() {
+  const theme = useTheme();
+  const [people, setPeople] = useState<MatchCandidateDto[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setError(null);
+    try {
+      setPeople(await matchesApi.getPeople());
+    } catch (err) {
+      console.error('Load people failed:', err);
+      setError(err instanceof ApiError ? err.message : "Couldn't reach the server. Check your connection and try again.");
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [load]),
+  );
+
+  if (error) {
+    return (
+      <View style={styles.centered}>
+        <ThemedText style={styles.error}>{error}</ThemedText>
+        <Pressable style={styles.button} onPress={load}>
+          <ThemedText style={styles.buttonText}>Try again</ThemedText>
+        </Pressable>
+      </View>
+    );
+  }
+
+  if (people === null) {
+    return (
+      <View style={styles.centered}>
+        <ActivityIndicator color={theme.text} />
+      </View>
+    );
+  }
+
+  return (
+    <FlatList
+      data={people}
+      keyExtractor={(item) => String(item.userId)}
+      contentContainerStyle={styles.peopleContent}
+      ItemSeparatorComponent={() => <View style={{ height: Spacing.two }} />}
+      ListEmptyComponent={
+        <ThemedText themeColor="textSecondary" style={styles.hint}>
+          No matches yet.
+        </ThemedText>
+      }
+      renderItem={({ item }) => (
+        <Pressable
+          style={[styles.personRow, { backgroundColor: theme.backgroundElement }]}
+          onPress={() => router.push({ pathname: '/match/[userId]', params: { userId: String(item.userId) } })}>
+          <Avatar avatarUrl={item.avatarUrl} displayName={item.displayName} size={48} />
+          <View style={styles.personInfo}>
+            <View style={styles.personNameRow}>
+              <ThemedText type="smallBold" numberOfLines={1} style={styles.personName}>
+                {item.displayName}
+              </ThemedText>
+              {item.isPremium && (
+                <ThemedText type="smallBold" style={styles.premiumLabel}>
+                  PREMIUM
+                </ThemedText>
+              )}
+            </View>
+            <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
+              @{item.username}
+            </ThemedText>
+          </View>
+          <ThemedText style={styles.personScore}>{Math.round(item.overallScore)}%</ThemedText>
+        </Pressable>
+      )}
+    />
   );
 }
 
@@ -175,31 +291,73 @@ function FilterRow({
   onSelect: (score: number) => void;
 }) {
   const theme = useTheme();
+  // The value under the finger while dragging; null when idle (the slider shows `selected`).
+  // Only the release commits it, so dragging across 65→95 is one reload, not seven.
+  const [draft, setDraft] = useState<number | null>(null);
+  const trackRef = useRef<View>(null);
+  const track = useRef({ x: 0, width: 0 });
+  // The PanResponder is created once, so it reads the latest props through refs.
+  const latest = useRef({ isPremium, selected, onSelect });
+  latest.current = { isPremium, selected, onSelect };
+
+  const valueAt = (pageX: number) => {
+    const { x, width } = track.current;
+    const ratio = width > 0 ? Math.min(1, Math.max(0, (pageX - x) / width)) : 0;
+    return FILTER_MIN + Math.round((ratio * (FILTER_MAX - FILTER_MIN)) / FILTER_STEP) * FILTER_STEP;
+  };
+
+  const responder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderTerminationRequest: () => false,
+      // Free users can see the slider but not move it — touching it shows the same "Premium is
+      // coming soon" message as the Premium CTA.
+      onPanResponderGrant: (e) => {
+        if (!latest.current.isPremium) {
+          showPremiumComingSoon();
+          return;
+        }
+        setDraft(valueAt(e.nativeEvent.pageX));
+      },
+      onPanResponderMove: (e) => {
+        if (latest.current.isPremium) setDraft(valueAt(e.nativeEvent.pageX));
+      },
+      onPanResponderRelease: (e) => {
+        if (!latest.current.isPremium) return;
+        const value = valueAt(e.nativeEvent.pageX);
+        setDraft(null);
+        if (value !== latest.current.selected) latest.current.onSelect(value);
+      },
+      onPanResponderTerminate: () => setDraft(null),
+    }),
+  ).current;
+
+  const shown = draft ?? selected;
+  const ratio = (shown - FILTER_MIN) / (FILTER_MAX - FILTER_MIN);
 
   return (
     <View style={styles.filterRow}>
       <ThemedText type="small" themeColor="textSecondary">
         Min match
       </ThemedText>
-      {FILTER_OPTIONS.map((score) => {
-        // Free users can see the options but only the default is usable — tapping the others
-        // shows the same "Premium is coming soon" message as the Premium CTA.
-        const isLocked = !isPremium && score > DEFAULT_MIN_SCORE;
-        const isSelected = score === selected;
-        return (
-          <Pressable
-            key={score}
-            onPress={() => (isLocked ? showPremiumComingSoon() : onSelect(score))}
-            style={[
-              styles.filterChip,
-              { backgroundColor: isSelected ? AccentColor : theme.backgroundElement, opacity: isLocked ? 0.45 : 1 },
-            ]}>
-            <ThemedText type="small" style={isSelected ? styles.filterChipTextSelected : undefined}>
-              {score}%
-            </ThemedText>
-          </Pressable>
-        );
-      })}
+      <View
+        ref={trackRef}
+        style={[styles.sliderArea, { opacity: isPremium ? 1 : 0.45 }]}
+        onLayout={() =>
+          trackRef.current?.measureInWindow((x, _y, width) => {
+            track.current = { x, width };
+          })
+        }
+        {...responder.panHandlers}>
+        <View style={[styles.sliderTrack, { backgroundColor: theme.backgroundElement }]}>
+          <View style={[styles.sliderFill, { width: `${ratio * 100}%` }]} />
+        </View>
+        <View style={[styles.sliderThumb, { left: `${ratio * 100}%` }]} />
+      </View>
+      <ThemedText type="smallBold" style={styles.sliderValue}>
+        {shown}%
+      </ThemedText>
       {!isPremium && (
         <ThemedText type="smallBold" style={styles.premiumTag}>
           Premium
@@ -226,6 +384,7 @@ function CandidateCard({ candidate, height }: { candidate: MatchCandidateDto; he
         favorites={candidate.favoriteMovies}
         commonCount={candidate.watchedOverlapCount}
         genres={candidate.topGenres}
+        badge={candidate.isPremium ? 'PREMIUM' : undefined}
         action={{ label: 'Message', onPress: openChat }}
         onPress={openProfile}
       />
@@ -282,14 +441,26 @@ const styles = StyleSheet.create({
   deckContainer: { flex: 1 },
   filterRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
     alignItems: 'center',
     gap: Spacing.one,
     paddingHorizontal: Spacing.four,
     paddingBottom: Spacing.two,
   },
-  filterChip: { borderRadius: Spacing.four, paddingHorizontal: Spacing.two, paddingVertical: Spacing.half },
-  filterChipTextSelected: { color: '#fff' },
+  // Taller than the visible track so it's easy to grab.
+  sliderArea: { flex: 1, height: 32, justifyContent: 'center', marginHorizontal: THUMB_SIZE / 2 },
+  sliderTrack: { height: 4, borderRadius: 2, overflow: 'hidden' },
+  sliderFill: { height: '100%', backgroundColor: AccentColor },
+  sliderThumb: {
+    position: 'absolute',
+    width: THUMB_SIZE,
+    height: THUMB_SIZE,
+    borderRadius: THUMB_SIZE / 2,
+    marginLeft: -THUMB_SIZE / 2,
+    backgroundColor: AccentColor,
+    borderWidth: 2,
+    borderColor: '#fff',
+  },
+  sliderValue: { minWidth: 40, textAlign: 'right' },
   premiumTag: { color: AccentColor, marginLeft: Spacing.one },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: Spacing.four, gap: Spacing.three },
   hint: { textAlign: 'center' },
@@ -297,6 +468,23 @@ const styles = StyleSheet.create({
   page: { paddingHorizontal: Spacing.three, paddingVertical: Spacing.two },
   endCard: { justifyContent: 'center', alignItems: 'center', padding: Spacing.five, gap: Spacing.two },
   endTitle: { textAlign: 'center' },
+  modeSwitch: {
+    flexDirection: 'row',
+    alignSelf: 'flex-start',
+    marginHorizontal: Spacing.four,
+    marginBottom: Spacing.two,
+    borderRadius: Spacing.three,
+    padding: Spacing.half,
+  },
+  modeOption: { borderRadius: Spacing.three, paddingHorizontal: Spacing.three, paddingVertical: Spacing.one },
+  modeTextSelected: { color: '#fff' },
+  peopleContent: { paddingHorizontal: Spacing.four, paddingBottom: Spacing.six },
+  personRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three, borderRadius: Spacing.two, padding: Spacing.three },
+  personInfo: { flex: 1, gap: Spacing.half },
+  personNameRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
+  personName: { flexShrink: 1 },
+  premiumLabel: { color: AccentColor, fontSize: 11, letterSpacing: 1 },
+  personScore: { color: AccentColor, fontSize: 22, lineHeight: 28, fontWeight: '800' },
   button: {
     backgroundColor: AccentColor,
     borderRadius: Spacing.two,

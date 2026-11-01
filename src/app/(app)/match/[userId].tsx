@@ -1,9 +1,10 @@
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { ApiError } from '@/api/client';
 import { matchesApi, type MatchResultDto, type WatchRecommendationsDto } from '@/api/matches';
+import { sharedListApi, type SharedListDto } from '@/api/shared-list';
 import { CategoryBox } from '@/components/category-box';
 import { PremiumCta, showPremiumComingSoon } from '@/components/premium-cta';
 import { ProfileCard } from '@/components/profile-card';
@@ -75,6 +76,36 @@ export default function MatchDetailScreen() {
     };
   }, [match]);
 
+  // The shared watch list's state for the "Watch list together" box — the existing GET already
+  // says everything needed: 404 = no conversation yet (lists hang off one), otherwise the two
+  // premium flags. null = loading or failed (box hidden). Re-fetched on focus so the count is
+  // current after coming back from the list screen.
+  const [sharedList, setSharedList] = useState<SharedListDto | 'no-chat' | null>(null);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!match) return;
+      let cancelled = false;
+      sharedListApi
+        .get(match.user2Id)
+        .then((result) => {
+          if (!cancelled) setSharedList(result);
+        })
+        .catch((err) => {
+          if (cancelled) return;
+          if (err instanceof ApiError && err.status === 404) {
+            setSharedList('no-chat');
+            return;
+          }
+          console.error('Load shared list state failed:', err);
+          setSharedList(null);
+        });
+      return () => {
+        cancelled = true;
+      };
+    }, [match]),
+  );
+
   if (isLoading) {
     return (
       <ThemedView style={styles.centered}>
@@ -139,6 +170,7 @@ export default function MatchDetailScreen() {
         favorites={match.otherFavoriteMovies}
         commonCount={match.watchedOverlap.count}
         genres={match.otherTopGenres ?? []}
+        badge={match.otherIsPremium ? 'PREMIUM' : undefined}
         action={{ label: 'Message', onPress: onMessage }}
       />
 
@@ -157,11 +189,14 @@ export default function MatchDetailScreen() {
         onPress={() => openOverlap('Watched together', match.watchedOverlap.movies)}
       />
 
+      {(recommendations !== null || sharedList !== null) && (
+        <ThemedText type="smallBold" style={styles.sectionTitle}>
+          Watch next
+        </ThemedText>
+      )}
+      {sharedList !== null && <WatchListBox state={sharedList} name={match.displayName} otherUserId={match.user2Id} />}
       {recommendations !== null && (
         <>
-          <ThemedText type="smallBold" style={styles.sectionTitle}>
-            Watch next
-          </ThemedText>
           {recommendations === 'locked' ? (
             <>
               <CategoryBox title={`${match.displayName}'s picks for you`} count={0} locked onPress={showPremiumComingSoon} />
@@ -186,6 +221,45 @@ export default function MatchDetailScreen() {
       </ScrollView>
     </ThemedView>
   );
+}
+
+// Entry point to the shared watch list from someone's profile, so free users can see the
+// feature exists even though they can't use it (the chat header's "List" link is the other way in).
+function WatchListBox({
+  state,
+  name,
+  otherUserId,
+}: {
+  state: SharedListDto | 'no-chat';
+  name: string;
+  otherUserId: number;
+}) {
+  const title = 'Watch list together';
+  const openList = () =>
+    router.push({ pathname: '/shared-list/[otherUserId]', params: { otherUserId: String(otherUserId), name } });
+
+  if (state === 'no-chat') {
+    return (
+      <CategoryBox
+        title={title}
+        count={0}
+        locked
+        lockedLabel="Chat first"
+        onPress={() => Alert.alert('No chat yet', `Start a chat with ${name} to build a list together.`)}
+      />
+    );
+  }
+
+  // Not premium yourself → the upsell. Premium but they aren't → still open the list screen,
+  // which explains "{name} needs Premium too." better than a bare alert could.
+  if (!state.callerIsPremium) {
+    return <CategoryBox title={title} count={0} locked onPress={showPremiumComingSoon} />;
+  }
+  if (!state.otherIsPremium) {
+    return <CategoryBox title={title} count={0} locked onPress={openList} />;
+  }
+
+  return <CategoryBox title={title} count={state.items.length} alwaysTappable onPress={openList} />;
 }
 
 function StatRow({ label, value }: { label: string; value: string }) {

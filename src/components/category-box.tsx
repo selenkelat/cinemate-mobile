@@ -11,17 +11,29 @@ interface CategoryBoxProps {
   // Premium-gated category seen by a free user: the count isn't known (the backend 403s before
   // computing it), so a "Premium" label replaces the badge. onPress is the caller's upsell.
   locked?: boolean;
+  // What a locked box says instead of the count (e.g. "Chat first" when the lock isn't Premium).
+  lockedLabel?: string;
+  // Stays tappable at count 0 — for a box whose screen is where you'd add the first item
+  // (the shared watch list), unlike a read-only overlap list where 0 means nothing to see.
+  alwaysTappable?: boolean;
 }
 
 // A tappable "N of these — go look" row: bold title on the left, an accent-colored count badge
 // and a chevron on the right. Used wherever a category (watched/liked, in common or personal)
 // leads to a poster grid — the badge + chevron are what signal "tap me" without a new icon
 // dependency (project doesn't use one).
-export function CategoryBox({ title, count, onPress, locked = false }: CategoryBoxProps) {
+export function CategoryBox({
+  title,
+  count,
+  onPress,
+  locked = false,
+  lockedLabel = 'Premium',
+  alwaysTappable = false,
+}: CategoryBoxProps) {
   const theme = useTheme();
   // Nothing to open — tapping used to land on an empty poster grid. Locked boxes stay tappable
   // (their tap is the upsell), so this only applies to a real, known-empty count.
-  const isEmpty = !locked && count === 0;
+  const isEmpty = !locked && !alwaysTappable && count === 0;
 
   return (
     <Pressable
@@ -34,7 +46,7 @@ export function CategoryBox({ title, count, onPress, locked = false }: CategoryB
       <View style={styles.right}>
         {locked ? (
           <ThemedText type="smallBold" style={styles.lockedText}>
-            Premium
+            {lockedLabel}
           </ThemedText>
         ) : (
           <View style={styles.badge}>

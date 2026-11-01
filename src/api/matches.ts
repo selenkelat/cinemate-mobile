@@ -18,6 +18,7 @@ export interface MatchCandidateDto {
   favoriteMovies: CandidateFavoriteMovieDto[];
   topGenres: string[];
   avatarUrl: string | null;
+  isPremium: boolean;
 }
 
 // Mirrors Cinemate.Models.Dto.OverlapMovieDto field-for-field.
@@ -49,6 +50,7 @@ export interface MatchResultDto {
   ratingCorrelation: number | null;
   sharedRatedCount: number;
   otherTopGenres: string[];
+  otherIsPremium: boolean;
 }
 
 // Mirrors Cinemate.Models.Dto.WatchRecommendationsDto field-for-field. Premium-only (403 for a
@@ -91,6 +93,9 @@ export const matchesApi = {
       totalCount: parseCount(headers.get('X-Total-Candidates')),
     };
   },
+  // The Matches tab's list view: everyone whose profile the caller can open (free: today's picks
+  // + anyone shown before + chat partners; premium: everyone + chat partners), best score first.
+  getPeople: () => apiRequest<MatchCandidateDto[]>('/api/match/people', { auth: true }),
   get: (otherUserId: number) => apiRequest<MatchResultDto>(`/api/match/${otherUserId}`, { auth: true }),
   getRecommendations: (otherUserId: number) =>
     apiRequest<WatchRecommendationsDto>(`/api/match/${otherUserId}/recommendations`, { auth: true }),
