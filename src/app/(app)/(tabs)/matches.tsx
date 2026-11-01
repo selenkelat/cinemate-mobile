@@ -1,6 +1,6 @@
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, PanResponder, Pressable, StyleSheet, View, type ViewToken } from 'react-native';
+import { ActivityIndicator, FlatList, PanResponder, Pressable, StyleSheet, View, type ListViewToken, type ViewInstance } from 'react-native';
 
 import { ApiError } from '@/api/client';
 import { matchesApi, type CandidatesResult, type MatchCandidateDto } from '@/api/matches';
@@ -250,10 +250,10 @@ function Deck({
 
   // FlatList requires these two to keep the same identity across renders (it throws if
   // onViewableItemsChanged changes), hence refs rather than inline values.
-  const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: ViewToken<DeckItem>[] }) => {
+  const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: ListViewToken[] }) => {
     const first = viewableItems[0];
     if (!first) return;
-    onVisibleIndexChange(first.item.type === 'candidate' ? first.index : null);
+    onVisibleIndexChange((first.item as DeckItem).type === 'candidate' ? (first.index ?? null) : null);
   }).current;
   const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 60 }).current;
 
@@ -294,7 +294,7 @@ function FilterRow({
   // The value under the finger while dragging; null when idle (the slider shows `selected`).
   // Only the release commits it, so dragging across 65→95 is one reload, not seven.
   const [draft, setDraft] = useState<number | null>(null);
-  const trackRef = useRef<View>(null);
+  const trackRef = useRef<ViewInstance>(null);
   const track = useRef({ x: 0, width: 0 });
   // The PanResponder is created once, so it reads the latest props through refs.
   const latest = useRef({ isPremium, selected, onSelect });

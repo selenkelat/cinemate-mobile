@@ -215,7 +215,7 @@ export default function ConversationScreen() {
           onEndReached={loadOlder}
           onEndReachedThreshold={0.3}
           ListFooterComponent={
-            isLoadingOlder ? <ActivityIndicator color={theme.text} style={styles.olderSpinner} /> : null
+            isLoadingOlder ? <ActivityIndicator color={theme.text} style={styles.olderSpinner} /> : undefined
           }
           renderItem={({ item }) => <MessageBubble message={item} isMine={item.senderId === user!.id} />}
           ListEmptyComponent={

@@ -12,13 +12,15 @@ function TabIcon({ name, color }: { name: SymbolViewProps['name']; color: ColorV
   return <SymbolView name={name} tintColor={color} size={24} />;
 }
 
+// Opens on Profile. SDK 58's router reads the initial tab from here, not from a Tabs prop.
+export const unstable_settings = { anchor: 'profile' };
+
 export default function TabsLayout() {
   const theme = useTheme();
   const { totalUnread } = useUnread();
 
   return (
     <Tabs
-      initialRouteName="profile"
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: AccentColor,
