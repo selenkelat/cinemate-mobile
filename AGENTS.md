@@ -135,6 +135,22 @@ confirms with an `Alert`, since it removes for both. A blocked conversation show
 read-only. No live updates — it reloads on focus (`useFocusEffect`); a 403 on a write (Premium
 lapsed / blocked mid-session) reloads to show the right state.
 
+**Account deletion** (`src/api/account.ts`, `src/app/(app)/delete-account.tsx`): a small red
+"Delete account" link at the very bottom of Settings (apart from the other actions, so it isn't
+hit by accident) opens the screen. It explains what's deleted (profile, films, favorites, chats
+incl. the other person's messages, shared lists — irreversible), asks for the password
+(`POST /api/me/account/delete`; 403 → "Incorrect password.", 429 → "Too many attempts…") and
+confirms once more with an `Alert`. If `/api/me/subscription` says premium (or that check
+fails — showing it to a free user is harmless, skipping it for a paying one isn't), a mandatory
+step comes first: Premium ends on deletion but store billing doesn't (Apple won't let us cancel
+it), so "Manage subscription" opens the store's subscription page via RN's own `Linking` and the
+delete button stays disabled until "I've cancelled my subscription" is ticked (a self-declaration
+— verifying it needs RevenueCat, Phase 2). `AuthContext.deleteAccount` calls the API, then does
+logout's local cleanup without calling logout (the backend already deleted the refresh token);
+the `(app)` layout's guard then redirects to login. In chat, a "Conversation ended." close (the
+other person deleted their account) shows "This conversation is no longer available." with no
+Reconnect — reconnecting would only 404.
+
 **Every screen starts with `src/components/screen-header.tsx`** (`ScreenHeader`). Every
 `Stack`/`Tabs` here has `headerShown: false`, so it's what pads the top with
 `useSafeAreaInsets().top` — without it the first row sits under the status bar/notch and can't be
