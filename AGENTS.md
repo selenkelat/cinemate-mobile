@@ -1,6 +1,6 @@
 # Expo HAS CHANGED
 
-Read the exact versioned docs at https://docs.expo.dev/versions/v57.0.0/ before writing any code.
+Read the exact versioned docs at https://docs.expo.dev/versions/v58.0.0/ before writing any code.
 
 # Project
 
@@ -174,6 +174,14 @@ Material Symbols on Android — already a dependency). A `CategoryBox` with coun
 `locked` or `alwaysTappable`) is dimmed and untappable.
 
 ## Known platform gotchas (already hit, don't re-debug)
+
+- **SDK 58 (RN 0.88) upgrade, 2026-11-02** — forced because iOS Expo Go only runs the latest SDK.
+  The tabs' initial route is `export const unstable_settings = { anchor: 'profile' }` in
+  `(tabs)/_layout.tsx` (the `Tabs` `initialRouteName` prop no longer exists). RN's strict
+  TypeScript API: refs are instance types (`useRef<ViewInstance>`, not `useRef<View>`),
+  `ViewToken` is `ListViewToken` (not generic — cast `item`), `useColorScheme()` returns
+  `'light' | 'dark' | null`, and FlatList slot props take `undefined`, not `null`. The lockfile
+  had to be regenerated (`--fix` alone hit an ERESOLVE on the old SDK 57 tree).
 
 - **Expo SDK 57's `fetch(uri).blob()` doesn't reliably set a correct `Content-Type` for a local
   `file://` upload** (ZIP export, avatar image) — bit both `ExportsController` and
